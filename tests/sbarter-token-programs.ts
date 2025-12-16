@@ -9,6 +9,7 @@ import {
   Keypair,
   PublicKey,
   SystemProgram,
+  Transaction,
 } from "@solana/web3.js";
 import {
   createMint,
@@ -20,7 +21,7 @@ import {
 } from "@solana/spl-token";
 import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
 
-const PROGRAM_ID = new PublicKey("Hvpe662GeFcr5oVsjhvFZ2dyfuVtHCVVmcjBU6ozQYzE");
+const PROGRAM_ID = new PublicKey("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
 const SYSTEM_PROGRAM_PID = SystemProgram.programId;
 
 const DEVNET_EXPLORER_TX = (sig: string) =>
@@ -40,6 +41,22 @@ const CATEGORY_NAMES = [
   "liquidity",
 ];
 
+const sendAndConfirmTx = async (tx: Transaction, connection: Connection, wallet: anchor.Wallet): Promise<string> => {
+  if (!wallet.publicKey) throw new Error('Wallet not connected');
+  tx.feePayer = wallet.publicKey;
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  tx.recentBlockhash = blockhash;
+
+  const signed = await wallet.signTransaction(tx);
+
+  const raw = signed.serialize();
+  const signature = await connection.sendRawTransaction(raw);
+  await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight });
+
+  return signature;
+};
+
 describe("sbarterTokenPrograms (devnet)", function() {
   // devnet network calls can be slow
   this.timeout(1000 * 60 * 10);
@@ -48,6 +65,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
   let connection: Connection;
   let program: anchor.Program<SbarterTokenPrograms>
   let master: Keypair;
+  let wallet: Wallet;
   let mint: PublicKey;
 
   // derived maps
@@ -63,9 +81,9 @@ describe("sbarterTokenPrograms (devnet)", function() {
     const arr = JSON.parse(raw) as number[];
     master = Keypair.fromSecretKey(Uint8Array.from(arr));
 
-    // connection = new Connection("https://api.devnet.solana.com", "confirmed");
-    connection = new Connection("http://127.0.0.1:8899", "confirmed");
-    const wallet = new anchor.Wallet(master);
+    connection = new Connection("https://api.devnet.solana.com", "confirmed");
+    // connection = new Connection("http://127.0.0.1:8899", "confirmed");
+    wallet = new anchor.Wallet(master);
 
     provider = new anchor.AnchorProvider(connection, wallet, {
       preflightCommitment: "confirmed",
@@ -175,7 +193,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
 
     // Call initialize
     try {
-      const sig = await program.methods.initialize().accounts(accounts).preInstructions([computeIx]).signers([master]).rpc({ commitment: 'confirmed' });
+      const tx = await program.methods.initialize().accounts(accounts).preInstructions([computeIx]).signers([master]).transaction();
+      const sig = await sendAndConfirmTx(tx, connection, wallet);
       console.log("initialize tx:", DEVNET_EXPLORER_TX(sig));
       try {
         const marketingCat = await program.account.categoryData.fetch(categoryPdas["marketing"]);
@@ -206,10 +225,11 @@ describe("sbarterTokenPrograms (devnet)", function() {
       systemProgram: SYSTEM_PROGRAM_PID,
     };
 
-    const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+    // const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
 
     try {
-      const sig = await program.methods.tge().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'confirmed' });
+      const tx = await program.methods.tge().preInstructions([]).accounts(accounts).signers([master]).transaction();
+      const sig = await sendAndConfirmTx(tx, connection, wallet);
       console.log("tge tx:", DEVNET_EXPLORER_TX(sig));
     } catch (e: any) {
       console.log(e);
@@ -297,9 +317,10 @@ describe("sbarterTokenPrograms (devnet)", function() {
       };
       console.log("\n");
 
-      const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+      // const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
 
-      const sig = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'confirmed' });
+      const tx = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).transaction();
+      const sig = await sendAndConfirmTx(tx, connection, wallet);
       console.log(`transferCategoryVestings #${i + 1} tx:`, DEVNET_EXPLORER_TX(sig));
       console.log(await getBalances());
       console.log("\n");
