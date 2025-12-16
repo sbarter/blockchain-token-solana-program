@@ -23,6 +23,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
+const_format = "0.2.35"
 spl-token = "9.0.0"
 
 

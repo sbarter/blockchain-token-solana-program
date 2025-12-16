@@ -1,3 +1,4 @@
+// ~2.72 SOL to deploy
 use anchor_lang::prelude::*;
 
 #[allow(unused_imports)]
@@ -12,24 +13,49 @@ pub mod instructions;
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
 pub const SBT_DECIMALS: u32 = 6;
-pub const fn units(sbt: u64) -> u64 {
+pub const fn tokens(sbt: u64) -> u64 {
     sbt * 10u64.pow(SBT_DECIMALS)
 }
 
-pub const TOTAL_MINT_SUPPLY: u64 = units(25_000_000_000);
+pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 
-pub const MARKETING_LIQUID_SUPPLY: u64 = units(100_000_000);
-pub const RESERVE_LIQUID_SUPPLY: u64 = units(0); // TODO:
-pub const LIQUIDITY_LIQUID_SUPPLY: u64 = units(937_500_000);
+pub const MARKETING_LIQUID_SUPPLY: u64 = tokens(100_000_000);
+pub const RESERVE_LIQUID_SUPPLY: u64 = 0; // TBD
+pub const RESERVE_PADDING: u64 = 54; // gets immediately put in reserve to even out the math
+pub const LIQUIDITY_LIQUID_SUPPLY: u64 = tokens(937_500_000);
 
-pub const PRESEED_MONTHLY_SUPPLY: u64 = units(2_000_000_000) / 24;
-pub const SEED_MONTHLY_SUPPLY: u64 = units(1_000_000_000) / 18;
-pub const INSTITUTIONAL_MONTHLY_SUPPLY: u64 = units(6_000_000_000) / 24;
-pub const VGP_MONTHLY_SUPPLY: u64 = units(5_000_000_000) / 24;
-pub const MARKETING_MONTHLY_SUPPLY: u64 = (units(2_000_000_000) - MARKETING_LIQUID_SUPPLY) / 36;
-pub const FOUNDERS_MONTHLY_SUPPLY: u64 = units(4_200_000_000) / 24;
-pub const RESERVE_MONTHLY_SUPPLY: u64 = (units(2_925_000_000) - RESERVE_LIQUID_SUPPLY) / 48;
-pub const LIQUIDITY_MONTHLY_SUPPLY: u64 = (units(1_875_000_000) - LIQUIDITY_LIQUID_SUPPLY) / 12;
+pub const PRESEED_MONTHLY_SUPPLY: u64 = tokens(2_000_000_000) / 24;
+pub const SEED_MONTHLY_SUPPLY: u64 = tokens(1_000_000_000) / 18;
+pub const INSTITUTIONAL_MONTHLY_SUPPLY: u64 = tokens(6_000_000_000) / 24;
+pub const VGP_MONTHLY_SUPPLY: u64 = tokens(5_000_000_000) / 24;
+pub const MARKETING_MONTHLY_SUPPLY: u64 = (tokens(2_000_000_000) - MARKETING_LIQUID_SUPPLY) / 36;
+pub const FOUNDERS_MONTHLY_SUPPLY: u64 = tokens(4_200_000_000) / 24;
+pub const RESERVE_MONTHLY_SUPPLY: u64 = (tokens(2_925_000_000) - RESERVE_LIQUID_SUPPLY) / 48;
+pub const LIQUIDITY_MONTHLY_SUPPLY: u64 = (tokens(1_875_000_000) - LIQUIDITY_LIQUID_SUPPLY) / 12;
+
+const _: () = {
+    const TOTAL_DISTRIBUTED: u64 = PRESEED_MONTHLY_SUPPLY * 24
+        + SEED_MONTHLY_SUPPLY * 18
+        + INSTITUTIONAL_MONTHLY_SUPPLY * 24
+        + VGP_MONTHLY_SUPPLY * 24
+        + MARKETING_MONTHLY_SUPPLY * 36
+        + MARKETING_LIQUID_SUPPLY
+        + FOUNDERS_MONTHLY_SUPPLY * 24
+        + RESERVE_MONTHLY_SUPPLY * 48
+        + RESERVE_LIQUID_SUPPLY
+        + RESERVE_PADDING
+        + LIQUIDITY_MONTHLY_SUPPLY * 12
+        + LIQUIDITY_LIQUID_SUPPLY;
+    assert!(
+        TOTAL_DISTRIBUTED == TOTAL_MINT_SUPPLY,
+        "{}",
+        const_format::formatcp!(
+            "{} SBT decimal units ({} decimals) difference with total supply",
+            TOTAL_DISTRIBUTED.abs_diff(TOTAL_MINT_SUPPLY),
+            SBT_DECIMALS
+        )
+    )
+};
 
 declare_id!("Hvpe662GeFcr5oVsjhvFZ2dyfuVtHCVVmcjBU6ozQYzE");
 #[program]
@@ -41,22 +67,12 @@ pub mod sbarter_token_programs {
     }
 
     pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
-        // Mint tokens, set authority to None, transfer to the master wallet signer.
-        // Transfer 100M SBT to the marketing category.
-        // Transfer 937.5M to the liquidity category.
-        // Create a Switchboard job with the TGE timestamp-relative trigger?
         instructions::tge::start_tge(ctx)
     }
 
     pub fn transfer_category_vestings<'info>(
         ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
     ) -> Result<()> {
-        // Triggered by a Switchboard cron-job or similar.
-        // 30-days has passed (does switchboard sign to verify the claim?),
-        // transfer monthly portions of SBT to each category,
-        // invoke their distribution instructions?
-        //
-        // but how would the cliff work?
         instructions::category::transfer_vestings(ctx)
     }
 }

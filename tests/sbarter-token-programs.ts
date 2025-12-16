@@ -22,7 +22,6 @@ import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
 
 const PROGRAM_ID = new PublicKey("Hvpe662GeFcr5oVsjhvFZ2dyfuVtHCVVmcjBU6ozQYzE");
 const SYSTEM_PROGRAM_PID = SystemProgram.programId;
-const TOKEN_MINT = new PublicKey("7JnYvjExQXW17ep9U78fxpqG6kMC3ZFaqC9BoWW1DGwf");
 
 const DEVNET_EXPLORER_TX = (sig: string) =>
   `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
@@ -49,7 +48,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
   let connection: Connection;
   let program: anchor.Program<SbarterTokenPrograms>
   let master: Keypair;
-  let mint: PublicKey = TOKEN_MINT;
+  let mint: PublicKey;
 
   // derived maps
   const categoryPdas: Record<string, PublicKey> = {};
@@ -65,7 +64,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     master = Keypair.fromSecretKey(Uint8Array.from(arr));
 
     // connection = new Connection("https://api.devnet.solana.com", "confirmed");
-    connection = new Connection("http://127.0.0.1:8899", "finalized");
+    connection = new Connection("http://127.0.0.1:8899", "confirmed");
     const wallet = new anchor.Wallet(master);
 
     provider = new anchor.AnchorProvider(connection, wallet, {
@@ -77,26 +76,26 @@ describe("sbarterTokenPrograms (devnet)", function() {
 
     // 2) create a new token-2022 mint with master as mint authority
     // decimals: 6 (adjust if you want)
-    // const decimals = 6;
+    const decimals = 6;
     // createMint uses the spl-token library; pass TOKEN_2022_PROGRAM_ID to createToken-2022 mint
     // createMint(connection, payer, mintAuthority, freezeAuthority, decimals, programId?);
     // Note: the exported constant TOKEN_2022_PROGRAM_ID is available from spl-token; we also have our constant above.
-    // mint = await createMint(
-    //   connection,
-    //   master, // payer
-    //   master.publicKey, // mint authority
-    //   null, // freeze authority
-    //   decimals,
-    //   null,
-    //   { commitment: 'confirmed' },
-    //   TOKEN_2022_PROGRAM_ID // token-2022 program id
-    // );
+    mint = await createMint(
+      connection,
+      master, // payer
+      master.publicKey, // mint authority
+      null, // freeze authority
+      decimals,
+      Keypair.generate(),
+      { commitment: 'confirmed' },
+      TOKEN_2022_PROGRAM_ID // token-2022 program id
+    );
     //
-    // console.log("Mint created:", mint.toBase58());
-    // console.log(
-    //   "Mint explorer:",
-    //   DEVNET_EXPLORER_ADDR(mint)
-    // );
+    console.log("Mint created:", mint.toBase58());
+    console.log(
+      "Mint explorer:",
+      DEVNET_EXPLORER_ADDR(mint)
+    );
 
     // derive PDAs for categories: use [utf8(categoryName), mintPubkey] as seeds and program id
     for (const cat of CATEGORY_NAMES) {
@@ -176,7 +175,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
 
     // Call initialize
     try {
-      const sig = await program.methods.initialize().accounts(accounts).preInstructions([computeIx]).signers([master]).rpc({ commitment: 'finalized' });
+      const sig = await program.methods.initialize().accounts(accounts).preInstructions([computeIx]).signers([master]).rpc({ commitment: 'confirmed' });
       console.log("initialize tx:", DEVNET_EXPLORER_TX(sig));
       try {
         const marketingCat = await program.account.categoryData.fetch(categoryPdas["marketing"]);
@@ -199,6 +198,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
       marketingAta: categoryAtas["marketing"],
       liquidityCat: categoryPdas["liquidity"],
       liquidityAta: categoryAtas["liquidity"],
+      reserveCat: categoryPdas["reserve"],
+      reserveAta: categoryAtas["reserve"],
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -208,7 +209,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
 
     try {
-      const sig = await program.methods.tge().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'finalized' });
+      const sig = await program.methods.tge().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'confirmed' });
       console.log("tge tx:", DEVNET_EXPLORER_TX(sig));
     } catch (e: any) {
       console.log(e);
@@ -240,14 +241,19 @@ describe("sbarterTokenPrograms (devnet)", function() {
     assert(liquidityAcc.amount >= BigInt(0), "liquidity ATA exists");
   });
 
-  it("invoke transferCategoryVestings 10 times and track balances", async () => {
+  it("invoke transferCategoryVestings 48 times and track balances", async () => {
     const getBalances = async () => {
       const out = {};
       for (const cat of CATEGORY_NAMES) {
         try {
           const acc = await getAccount(connection, categoryAtas[cat], "confirmed", TOKEN_2022_PROGRAM_ID);
           const category = await program.account.categoryData.fetch(categoryPdas[cat]);
-          out[cat] = { amount: acc.amount, pda: category };
+          out[cat] = {
+            amount: acc.amount, pda: {
+              cliffMonthsRemaining: category.cliffMonthsRemaining,
+              vestingMonthsRemaining: category.vestingMonthsRemaining
+            }
+          };
         } catch {
           out[cat] = "error";
         }
@@ -264,7 +270,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     const beforeBalances = await getBalances();
     console.log("Balances before transferCategoryVestings:", beforeBalances);
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 48; i++) {
       const accounts: Record<string, PublicKey> = {
         master: master.publicKey,
         masterAta: masterAta,
@@ -293,7 +299,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
 
       const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
 
-      const sig = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'finalized' });
+      const sig = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).rpc({ commitment: 'confirmed' });
       console.log(`transferCategoryVestings #${i + 1} tx:`, DEVNET_EXPLORER_TX(sig));
       console.log(await getBalances());
       console.log("\n");

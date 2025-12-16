@@ -9,8 +9,9 @@ use anchor_spl::{
 };
 
 use crate::{
-    category::{CategoryData, LIQUIDITY_CATEGORY, MARKETING_CATEGORY},
-    LIQUIDITY_LIQUID_SUPPLY, MARKETING_LIQUID_SUPPLY, SBT_DECIMALS, TOTAL_MINT_SUPPLY,
+    category::{CategoryData, LIQUIDITY_CATEGORY, MARKETING_CATEGORY, RESERVE_CATEGORY},
+    LIQUIDITY_LIQUID_SUPPLY, MARKETING_LIQUID_SUPPLY, RESERVE_LIQUID_SUPPLY, RESERVE_PADDING,
+    SBT_DECIMALS, TOTAL_MINT_SUPPLY,
 };
 
 pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
@@ -85,6 +86,19 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
     token_2022::transfer_checked(cpi_ctx, LIQUIDITY_LIQUID_SUPPLY, SBT_DECIMALS as u8)?;
 
+    let cpi_accounts = TransferChecked {
+        from: ctx.accounts.master_ata.to_account_info(),
+        to: ctx.accounts.reserve_ata.to_account_info(),
+        authority: ctx.accounts.master.to_account_info(),
+        mint: ctx.accounts.mint.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    token_2022::transfer_checked(
+        cpi_ctx,
+        RESERVE_LIQUID_SUPPLY + RESERVE_PADDING,
+        SBT_DECIMALS as u8,
+    )?;
+
     Ok(())
 }
 
@@ -115,6 +129,16 @@ pub struct Tge<'info> {
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
     #[account(mut)]
     pub liquidity_ata: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub reserve_cat: Account<'info, CategoryData>,
+    /// CHECK: created by Initialize, checked to be owned by liquidity_cat
+    #[account(mut)]
+    pub reserve_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, mint::authority = master)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
