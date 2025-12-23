@@ -9,7 +9,13 @@ use anchor_spl::{
 };
 
 use crate::{
-    category::{CategoryData, LIQUIDITY_CATEGORY, MARKETING_CATEGORY, RESERVE_CATEGORY},
+    states::{
+        category::{
+            FunctionalCategoryData, LIQUIDITY_CATEGORY, MARKETING_CATEGORY, RESERVE_CATEGORY,
+        },
+        InvestorCategoryData, FOUNDERS_CATEGORY, INSTITUTIONAL_CATEGORY, PRE_SEED_CATEGORY,
+        SEED_CATEGORY, VGP_CATEGORY,
+    },
     LIQUIDITY_LIQUID_SUPPLY, MARKETING_LIQUID_SUPPLY, RESERVE_LIQUID_SUPPLY, RESERVE_PADDING,
     SBT_DECIMALS, TOTAL_MINT_SUPPLY,
 };
@@ -29,7 +35,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     require_keys_eq!(
         ctx.accounts.marketing_ata.key(),
         get_associated_token_address_with_program_id(
-            &ctx.accounts.marketing_cat.to_account_info().key(),
+            &ctx.accounts.marketing_cat.wallet,
             &ctx.accounts.mint.key(),
             &token_2022::ID,
         ),
@@ -38,7 +44,16 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     require_keys_eq!(
         ctx.accounts.liquidity_ata.key(),
         get_associated_token_address_with_program_id(
-            &ctx.accounts.liquidity_cat.to_account_info().key(),
+            &ctx.accounts.liquidity_cat.wallet,
+            &ctx.accounts.mint.key(),
+            &token_2022::ID,
+        ),
+        crate::error::ErrorCode::AtaMismatch,
+    );
+    require_keys_eq!(
+        ctx.accounts.reserve_ata.key(),
+        get_associated_token_address_with_program_id(
+            &ctx.accounts.reserve_cat.wallet,
             &ctx.accounts.mint.key(),
             &token_2022::ID,
         ),
@@ -67,6 +82,16 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         AuthorityType::MintTokens,
         None,
     )?;
+
+    let now = Clock::get()?.unix_timestamp as u64;
+    ctx.accounts.pre_seed_cat.cliff_started_at = now;
+    ctx.accounts.seed_cat.cliff_started_at = now;
+    ctx.accounts.institutional_cat.cliff_started_at = now;
+    ctx.accounts.vgp_cat.cliff_started_at = now;
+    ctx.accounts.founders_cat.cliff_started_at = now;
+    ctx.accounts.marketing_cat.cliff_started_at = now;
+    ctx.accounts.liquidity_cat.cliff_started_at = now;
+    ctx.accounts.reserve_cat.cliff_started_at = now;
 
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
@@ -111,11 +136,41 @@ pub struct Tge<'info> {
     pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
+        seeds = [PRE_SEED_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
+
+    #[account(
+        seeds = [SEED_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
+
+    #[account(
+        seeds = [INSTITUTIONAL_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
+
+    #[account(
+        seeds = [VGP_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
+
+    #[account(
+        seeds = [FOUNDERS_CATEGORY.0, mint.key().as_ref()],
+        bump
+    )]
+    pub founders_cat: Box<Account<'info, InvestorCategoryData>>,
+
+    #[account(
         mut,
         seeds = [MARKETING_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub marketing_cat: Account<'info, CategoryData>,
+    pub marketing_cat: Account<'info, FunctionalCategoryData>,
     /// CHECK: created by Initialize, checked to be owned by marketing_cat
     #[account(mut)]
     pub marketing_ata: InterfaceAccount<'info, TokenAccount>,
@@ -125,7 +180,7 @@ pub struct Tge<'info> {
         seeds = [LIQUIDITY_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub liquidity_cat: Account<'info, CategoryData>,
+    pub liquidity_cat: Account<'info, FunctionalCategoryData>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
     #[account(mut)]
     pub liquidity_ata: InterfaceAccount<'info, TokenAccount>,
@@ -135,7 +190,7 @@ pub struct Tge<'info> {
         seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub reserve_cat: Account<'info, CategoryData>,
+    pub reserve_cat: Account<'info, FunctionalCategoryData>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
     #[account(mut)]
     pub reserve_ata: InterfaceAccount<'info, TokenAccount>,

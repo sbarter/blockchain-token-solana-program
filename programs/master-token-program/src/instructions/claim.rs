@@ -1,0 +1,107 @@
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_2022::{self, Token2022, TransferChecked},
+    token_interface::{Mint, TokenAccount},
+};
+
+use crate::{
+    states::{Investor, InvestorCategoryData},
+    SBT_DECIMALS, VESTING_MONTH,
+};
+
+pub fn investor_claim_tokens<'info>(
+    ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
+    _category_seed: String,
+    _investor_index: u32,
+) -> Result<()> {
+    let category = &ctx.accounts.category;
+    let investor = &mut ctx.accounts.investor_pda;
+
+    let now = Clock::get()?.unix_timestamp as u64;
+    require!(
+        category.cliff_started_at != 0,
+        crate::error::ErrorCode::TgeNotHappened
+    );
+
+    let since_tge = now.saturating_sub(category.cliff_started_at);
+    let months_elapsed = (since_tge / VESTING_MONTH) as u8;
+    let total_months = months_elapsed.saturating_sub(category.months_claimed);
+
+    if total_months == 0 {
+        msg!("No claim available.");
+        return Ok(());
+    }
+
+    let mut total_tokens = 0;
+    for _ in 0..total_months {
+        if investor.vesting_months_remaining == 0 {
+            break;
+        }
+        if investor.cliff_months_remaining > 0 {
+            investor.cliff_months_remaining -= total_months;
+            continue;
+        }
+        if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0 {
+            total_tokens += category.monthly_allocation;
+            investor.vesting_months_remaining -= total_months;
+            continue;
+        }
+    }
+    if total_tokens > 0 {
+        let cpi_accounts = TransferChecked {
+            from: ctx.accounts.category_ata.to_account_info(),
+            to: ctx.accounts.investor_ata.to_account_info(),
+            authority: ctx.accounts.program_authority.to_account_info(),
+            mint: ctx.accounts.mint.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+    }
+    investor.months_claimed += total_months;
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction(category_seed: String, investor_index: u32)]
+pub struct InvestorClaimTokens<'info> {
+    #[account(
+        mut,
+        seeds = [category_seed.as_bytes(), investor_index.to_le_bytes().as_ref(),
+        mint.key().as_ref()],
+        bump
+    )]
+    pub investor_pda: Account<'info, Investor>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = investor_pda.wallet,
+        associated_token::token_program = associated_token_program
+    )]
+    pub investor_ata: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        seeds = [category_seed.as_bytes(), mint.key().as_ref()],
+        bump
+    )]
+    pub category: Account<'info, InvestorCategoryData>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = investor_pda.wallet,
+        associated_token::token_program = associated_token_program
+    )]
+    pub category_ata: InterfaceAccount<'info, TokenAccount>,
+
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(address = crate::ID)]
+    /// CHECK: Has to be this program's ID
+    pub program_authority: AccountInfo<'info>,
+    pub token_program: Program<'info, Token2022>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}

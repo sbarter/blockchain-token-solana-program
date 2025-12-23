@@ -1,14 +1,11 @@
-// ~2.72 SOL to deploy
 use anchor_lang::prelude::*;
 
 #[allow(unused_imports)]
-use category::*;
-#[allow(unused_imports)]
 use instructions::*;
 
-pub mod category;
 pub mod error;
 pub mod instructions;
+pub mod states;
 
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
@@ -16,6 +13,8 @@ pub const SBT_DECIMALS: u32 = 6;
 pub const fn tokens(sbt: u64) -> u64 {
     sbt * 10u64.pow(SBT_DECIMALS)
 }
+
+pub const VESTING_MONTH: u64 = 30 * 24 * 60 * 60;
 
 pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 
@@ -60,6 +59,7 @@ const _: () = {
 declare_id!("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
 #[program]
 pub mod sbarter_token_programs {
+
     use super::*;
 
     pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
@@ -73,6 +73,36 @@ pub mod sbarter_token_programs {
     pub fn transfer_category_vestings<'info>(
         ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
     ) -> Result<()> {
-        instructions::category::transfer_vestings(ctx)
+        instructions::category::transfer_category_vestings(ctx)
     }
+
+    pub fn investor_claim_tokens<'info>(
+        ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
+        category_seed: String,
+        investor_index: u32,
+    ) -> Result<()> {
+        instructions::claim::investor_claim_tokens(ctx, category_seed, investor_index)
+    }
+
+    pub fn add_investor_to_category<'info>(
+        ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
+        category_seed: String,
+        new_investor_index: u32,
+        monthly_allocation: u64,
+    ) -> Result<()> {
+        instructions::add_investor::add_investor_to_category(
+            ctx,
+            category_seed,
+            new_investor_index,
+            monthly_allocation,
+        )
+    }
+    //
+    // pub fn withdraw_from_category<'info>(ctx: Context<'_, '_, '_, 'info, ()>) -> Result<()> {
+    //     Ok(())
+    // }
+    //
+    // pub fn deposit_into_category<'info>(ctx: Context<'_, '_, '_, 'info, ()>) -> Result<()> {
+    //     Ok(())
+    // }
 }
