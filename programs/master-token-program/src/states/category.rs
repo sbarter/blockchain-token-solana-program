@@ -37,7 +37,7 @@ pub struct FunctionalCategoryData {
 }
 
 impl FunctionalCategoryData {
-    pub const LEN: usize = 8 + 32 + 8 + 1 + 1;
+    pub const LEN: usize = 8 + 32 + 8 + 8 + 1 + 1 + 1;
 }
 
 pub const PRE_SEED_CATEGORY: (&[u8], InvestorCategoryData) = (

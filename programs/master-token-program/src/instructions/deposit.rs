@@ -34,9 +34,6 @@ pub fn deposit_category_tokens<'info>(
 #[derive(Accounts)]
 #[instruction(category_seed: String, amount: u64)]
 pub struct DepositCategoryTokens<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
-    pub master: Signer<'info>,
-
     #[account(mut, signer)]
     pub sender: Signer<'info>,
     #[account(
@@ -57,15 +54,12 @@ pub struct DepositCategoryTokens<'info> {
     #[account(
         mut,
         associated_token::mint = mint,
-        associated_token::authority = program_authority,
+        associated_token::authority = category,
         associated_token::token_program = associated_token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(address = crate::ID)]
-    /// CHECK: Has to be this program's ID
-    pub program_authority: AccountInfo<'info>,
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,

@@ -9,7 +9,7 @@ use anchor_spl::{
 fn update_vesting_for_investor_category<'info>(
     category: &mut Account<'info, InvestorCategoryData>,
     category_ata: AccountInfo<'info>,
-    master: &AccountInfo<'info>,
+    master_pda: &AccountInfo<'info>,
     master_ata: &InterfaceAccount<'info, TokenAccount>,
     mint: &InterfaceAccount<'info, Mint>,
     token_program: &Program<'info, Token2022>,
@@ -60,7 +60,7 @@ fn update_vesting_for_investor_category<'info>(
         let cpi_accounts = TransferChecked {
             from: master_ata.to_account_info(),
             to: category_ata,
-            authority: master.to_account_info(),
+            authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
@@ -80,7 +80,7 @@ fn update_vesting_for_investor_category<'info>(
 fn update_vesting_for_functional_category<'info>(
     category: &mut Account<'info, FunctionalCategoryData>,
     category_ata: AccountInfo<'info>,
-    master: &AccountInfo<'info>,
+    master_pda: &AccountInfo<'info>,
     master_ata: &InterfaceAccount<'info, TokenAccount>,
     mint: &InterfaceAccount<'info, Mint>,
     token_program: &Program<'info, Token2022>,
@@ -131,7 +131,7 @@ fn update_vesting_for_functional_category<'info>(
         let cpi_accounts = TransferChecked {
             from: master_ata.to_account_info(),
             to: category_ata,
-            authority: master.to_account_info(),
+            authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
@@ -152,14 +152,14 @@ pub fn transfer_category_vestings<'info>(
     ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
 ) -> Result<()> {
     let master_ata = &ctx.accounts.master_ata;
+    let master_pda = &ctx.accounts.master_pda;
     let mint = &ctx.accounts.mint;
     let token_program = &ctx.accounts.token_program;
-    let authority = &ctx.accounts.program_authority;
 
     if update_vesting_for_investor_category(
         &mut ctx.accounts.pre_seed_cat,
         ctx.accounts.pre_seed_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -171,7 +171,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_investor_category(
         &mut ctx.accounts.seed_cat,
         ctx.accounts.seed_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -183,7 +183,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_investor_category(
         &mut ctx.accounts.institutional_cat,
         ctx.accounts.institutional_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -195,7 +195,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_investor_category(
         &mut ctx.accounts.vgp_cat,
         ctx.accounts.vgp_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -207,7 +207,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_investor_category(
         &mut ctx.accounts.founders_cat,
         ctx.accounts.founders_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -219,7 +219,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_functional_category(
         &mut ctx.accounts.marketing_cat,
         ctx.accounts.marketing_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -231,7 +231,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_functional_category(
         &mut ctx.accounts.reserve_cat,
         ctx.accounts.reserve_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -243,7 +243,7 @@ pub fn transfer_category_vestings<'info>(
     if update_vesting_for_functional_category(
         &mut ctx.accounts.liquidity_cat,
         ctx.accounts.liquidity_ata.to_account_info(),
-        authority,
+        master_pda,
         master_ata,
         mint,
         token_program,
@@ -257,7 +257,21 @@ pub fn transfer_category_vestings<'info>(
 
 #[derive(Accounts)]
 pub struct TransferCategoryVestings<'info> {
-    #[account(mut, token::mint = mint, token::authority = crate::ID)]
+    #[account(
+        mut,
+        seeds = [b"master", mint.key().as_ref()],
+        bump
+    )]
+    /// CHECK: pda authority
+    pub master_pda: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = master_pda,
+        associated_token::token_program = associated_token_program
+    )]
+    /// CHECK: created by Initialize
     pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
@@ -342,10 +356,6 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(mut)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(address = crate::ID)]
-    /// CHECK: Has to be this program's ID
-    pub program_authority: AccountInfo<'info>,
-
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,

@@ -19,6 +19,7 @@ fn initialize_investor_category<'info>(
     system_program: &Program<'info, System>,
 ) -> Result<()> {
     category.monthly_allocation = data.monthly_allocation;
+    category.unallocated_total_tokens = data.unallocated_total_tokens;
     category.cliff_months_remaining = data.cliff_months_remaining;
     category.vesting_months_remaining = data.vesting_months_remaining;
     category.investor_count = data.investor_count;
@@ -47,7 +48,7 @@ fn initialize_investor_category<'info>(
 fn initialize_functional_category<'info>(
     category: &mut Account<'info, FunctionalCategoryData>,
     category_ata: &UncheckedAccount<'info>,
-    authority: &UncheckedAccount<'info>,
+    authority: &AccountInfo<'info>,
     data: FunctionalCategoryData,
     master: &Signer<'info>,
     mint: &InterfaceAccount<'info, Mint>,
@@ -55,12 +56,13 @@ fn initialize_functional_category<'info>(
     associated_token_program: &Program<'info, AssociatedToken>,
     system_program: &Program<'info, System>,
 ) -> Result<()> {
+    category.wallet = data.wallet;
     category.monthly_allocation = data.monthly_allocation;
     category.cliff_months_remaining = data.cliff_months_remaining;
     category.vesting_months_remaining = data.vesting_months_remaining;
 
     let expected_category_ata = get_associated_token_address_with_program_id(
-        &category.wallet,
+        &authority.key(),
         &mint.key(),
         &token_2022::ID,
     );
@@ -85,7 +87,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     let mut failed = false;
 
     let expected_master_ata = get_associated_token_address_with_program_id(
-        &crate::ID,
+        &ctx.accounts.master_pda.key(),
         &ctx.accounts.mint.key(),
         &token_2022::ID,
     );
@@ -94,7 +96,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     let cpi_accounts = associated_token::Create {
         payer: ctx.accounts.master.to_account_info(),
         associated_token: ctx.accounts.master_ata.as_ref().clone(),
-        authority: ctx.accounts.program_authority.to_account_info(),
+        authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
         token_program: ctx.accounts.token_program.to_account_info(),
@@ -112,6 +114,55 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     let system_program = &ctx.accounts.system_program;
     let associated_token_program = &ctx.accounts.associated_token_program;
     let token_program = &ctx.accounts.token_program;
+
+    if initialize_functional_category(
+        &mut ctx.accounts.marketing_cat,
+        &ctx.accounts.marketing_ata,
+        &ctx.accounts.marketing_authority,
+        MARKETING_CATEGORY.1,
+        master,
+        mint,
+        token_program,
+        associated_token_program,
+        system_program,
+    )
+    .is_err()
+    {
+        failed = true;
+        msg!("Failed to initialize category for marketing!");
+    }
+    if initialize_functional_category(
+        &mut ctx.accounts.reserve_cat,
+        &ctx.accounts.reserve_ata,
+        &ctx.accounts.reserve_authority,
+        RESERVE_CATEGORY.1,
+        master,
+        mint,
+        token_program,
+        associated_token_program,
+        system_program,
+    )
+    .is_err()
+    {
+        failed = true;
+        msg!("Failed to initialize category for reserve!");
+    }
+    if initialize_functional_category(
+        &mut ctx.accounts.liquidity_cat,
+        &ctx.accounts.liquidity_ata,
+        &ctx.accounts.liquidity_authority,
+        LIQUIDITY_CATEGORY.1,
+        master,
+        mint,
+        token_program,
+        associated_token_program,
+        system_program,
+    )
+    .is_err()
+    {
+        failed = true;
+        msg!("Failed to initialize category for liquidity!");
+    }
 
     if initialize_investor_category(
         &mut ctx.accounts.pre_seed_cat,
@@ -188,56 +239,8 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         failed = true;
         msg!("Failed to initialize category for founders!");
     }
-    if initialize_functional_category(
-        &mut ctx.accounts.marketing_cat,
-        &ctx.accounts.marketing_ata,
-        &ctx.accounts.marketing_authority,
-        MARKETING_CATEGORY.1,
-        master,
-        mint,
-        token_program,
-        associated_token_program,
-        system_program,
-    )
-    .is_err()
-    {
-        failed = true;
-        msg!("Failed to initialize category for marketing!");
-    }
-    if initialize_functional_category(
-        &mut ctx.accounts.reserve_cat,
-        &ctx.accounts.reserve_ata,
-        &ctx.accounts.reserve_authority,
-        RESERVE_CATEGORY.1,
-        master,
-        mint,
-        token_program,
-        associated_token_program,
-        system_program,
-    )
-    .is_err()
-    {
-        failed = true;
-        msg!("Failed to initialize category for reserve!");
-    }
-    if initialize_functional_category(
-        &mut ctx.accounts.liquidity_cat,
-        &ctx.accounts.liquidity_ata,
-        &ctx.accounts.liquidity_authority,
-        LIQUIDITY_CATEGORY.1,
-        master,
-        mint,
-        token_program,
-        associated_token_program,
-        system_program,
-    )
-    .is_err()
-    {
-        failed = true;
-        msg!("Failed to initialize category for liquidity!");
-    }
     if failed {
-        Err(crate::error::ErrorCode::InitError.into())
+        err!(crate::error::ErrorCode::InitError)
     } else {
         Ok(())
     }
@@ -247,6 +250,14 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
 pub struct Initialize<'info> {
     #[account(mut, signer, address = crate::MASTER_WALLET)]
     pub master: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"master", mint.key().as_ref()],
+        bump
+    )]
+    /// CHECK: pda authority
+    pub master_pda: AccountInfo<'info>,
 
     #[account(mut)]
     /// CHECK: will be initialized
@@ -320,8 +331,8 @@ pub struct Initialize<'info> {
         bump
     )]
     pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
-    /// CHECK: will be initialized
-    pub marketing_authority: UncheckedAccount<'info>,
+    /// CHECK: provided category authority, no checks
+    pub marketing_authority: AccountInfo<'info>,
     #[account(mut)]
     /// CHECK: will be initialized
     pub marketing_ata: UncheckedAccount<'info>,
@@ -334,8 +345,8 @@ pub struct Initialize<'info> {
         bump
     )]
     pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
-    /// CHECK: will be initialized
-    pub reserve_authority: UncheckedAccount<'info>,
+    /// CHECK: provided category authority, no checks
+    pub reserve_authority: AccountInfo<'info>,
     #[account(mut)]
     /// CHECK: will be initialized
     pub reserve_ata: UncheckedAccount<'info>,
@@ -348,15 +359,12 @@ pub struct Initialize<'info> {
         bump
     )]
     pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,
-    /// CHECK: will be initialized
-    pub liquidity_authority: UncheckedAccount<'info>,
+    /// CHECK: provided category authority, no checks
+    pub liquidity_authority: AccountInfo<'info>,
     #[account(mut)]
     /// CHECK: will be initialized
     pub liquidity_ata: UncheckedAccount<'info>,
 
-    #[account(address = crate::ID)]
-    /// CHECK: Has to be this program's ID
-    pub program_authority: AccountInfo<'info>,
     #[account(mut, mint::authority = master)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,

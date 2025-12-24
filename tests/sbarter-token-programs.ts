@@ -7,6 +7,7 @@ import {
   ComputeBudgetProgram,
   Connection,
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
   Transaction,
@@ -30,16 +31,27 @@ const DEVNET_EXPLORER_ADDR = (addr: PublicKey) =>
   `https://explorer.solana.com/address/${addr.toBase58()}?cluster=devnet`;
 
 // categories we will use
-const CATEGORY_NAMES = [
+const INVESTOR_CATEGORY_NAMES = [
   "preseed",
   "seed",
   "institutional",
   "vgp",
-  "marketing",
   "founders",
+];
+
+const FUNCTIONAL_CATEGORY_NAMES = [
+  "marketing",
   "reserve",
   "liquidity",
 ];
+
+const FUNCTIONAL_CATEGORY_AUTHORITIES = {
+  marketing: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+  reserve: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+  liquidity: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+};
+
+const ALL_CATEGORY_NAMES = INVESTOR_CATEGORY_NAMES.concat(FUNCTIONAL_CATEGORY_NAMES)
 
 const sendAndConfirmTx = async (tx: Transaction, connection: Connection, wallet: anchor.Wallet): Promise<string> => {
   if (!wallet.publicKey) throw new Error('Wallet not connected');
@@ -65,12 +77,13 @@ describe("sbarterTokenPrograms (devnet)", function() {
   let connection: Connection;
   let program: anchor.Program<SbarterTokenPrograms>
   let master: Keypair;
-  let wallet: Wallet;
+  let wallet: anchor.Wallet;
   let mint: PublicKey;
 
   // derived maps
   const categoryPdas: Record<string, PublicKey> = {};
   const categoryAtas: Record<string, PublicKey> = {};
+  let masterPda: PublicKey;
   let masterAta: PublicKey;
 
   before(async () => {
@@ -81,8 +94,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
     const arr = JSON.parse(raw) as number[];
     master = Keypair.fromSecretKey(Uint8Array.from(arr));
 
-    connection = new Connection("https://api.devnet.solana.com", "confirmed");
-    // connection = new Connection("http://127.0.0.1:8899", "confirmed");
+    // connection = new Connection("https://api.devnet.solana.com", "confirmed");
+    connection = new Connection("http://127.0.0.1:8899", "confirmed");
     wallet = new anchor.Wallet(master);
 
     provider = new anchor.AnchorProvider(connection, wallet, {
@@ -91,6 +104,15 @@ describe("sbarterTokenPrograms (devnet)", function() {
     anchor.setProvider(provider);
 
     program = anchor.workspace.sbarterTokenPrograms as anchor.Program<SbarterTokenPrograms>;
+
+    for (const wallet of Object.values(FUNCTIONAL_CATEGORY_AUTHORITIES)) {
+      console.log("Requesting airdrop for wallet:", wallet);
+      await connection.confirmTransaction(
+        await connection.requestAirdrop(wallet, 1 * LAMPORTS_PER_SOL)
+      );
+      const info = await connection.getAccountInfo(wallet);
+      console.log(info);
+    }
 
     // 2) create a new token-2022 mint with master as mint authority
     // decimals: 6 (adjust if you want)
@@ -116,7 +138,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     );
 
     // derive PDAs for categories: use [utf8(categoryName), mintPubkey] as seeds and program id
-    for (const cat of CATEGORY_NAMES) {
+    for (const cat of INVESTOR_CATEGORY_NAMES) {
       const [pda] = PublicKey.findProgramAddressSync(
         [Buffer.from(cat), mint.toBuffer()],
         PROGRAM_ID
@@ -134,11 +156,30 @@ describe("sbarterTokenPrograms (devnet)", function() {
       categoryAtas[cat] = ata;
     }
 
+    for (const cat of FUNCTIONAL_CATEGORY_NAMES) {
+      const [pda] = PublicKey.findProgramAddressSync(
+        [Buffer.from(cat), mint.toBuffer()],
+        PROGRAM_ID
+      );
+      categoryPdas[cat] = pda;
+
+      // derive associated token account for that PDA (owner = pda)
+      const ata = await getAssociatedTokenAddress(
+        mint,
+        FUNCTIONAL_CATEGORY_AUTHORITIES[cat],
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      categoryAtas[cat] = ata;
+    }
+
+    [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master"), mint.toBuffer()], PROGRAM_ID);
     // master ATA (master wallet's ATA for this mint)
     masterAta = await getAssociatedTokenAddress(
       mint,
-      master.publicKey,
-      false,
+      masterPda,
+      true,
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
@@ -146,7 +187,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     // Log ATAs and PDAs explorer links
     console.log("Master:", master.publicKey.toBase58());
     console.log("Master ATA:", masterAta.toBase58(), DEVNET_EXPLORER_ADDR(masterAta));
-    for (const cat of CATEGORY_NAMES) {
+    for (const cat of ALL_CATEGORY_NAMES) {
       console.log(
         `${cat} pda:`,
         categoryPdas[cat].toBase58(),
@@ -166,6 +207,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     // Note: some accounts in IDL are named slightly differently (preSeed vs preseed). We'll match the IDL names.
     const accounts: Record<string, PublicKey> = {
       master: master.publicKey,
+      masterPda: masterPda,
       masterAta: masterAta,
       preSeedCat: categoryPdas["preseed"],
       preSeedAta: categoryAtas["preseed"],
@@ -176,12 +218,15 @@ describe("sbarterTokenPrograms (devnet)", function() {
       vgpCat: categoryPdas["vgp"],
       vgpAta: categoryAtas["vgp"],
       marketingCat: categoryPdas["marketing"],
+      marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
       marketingAta: categoryAtas["marketing"],
       foundersCat: categoryPdas["founders"],
       foundersAta: categoryAtas["founders"],
       reserveCat: categoryPdas["reserve"],
+      reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
       reserveAta: categoryAtas["reserve"],
       liquidityCat: categoryPdas["liquidity"],
+      liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
       liquidityAta: categoryAtas["liquidity"],
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
@@ -197,13 +242,20 @@ describe("sbarterTokenPrograms (devnet)", function() {
       const sig = await sendAndConfirmTx(tx, connection, wallet);
       console.log("initialize tx:", DEVNET_EXPLORER_TX(sig));
       try {
-        const marketingCat = await program.account.categoryData.fetch(categoryPdas["marketing"]);
+        const marketingCat = await program.account.functionalCategoryData.fetch(categoryPdas["marketing"]);
         console.log("Marketing PDA fetch succeded:", marketingCat);
       } catch (e: any) {
         console.log("Marketing PDA fetch failed:", e);
       }
+
+      try {
+        const preseedCat = await program.account.investorCategoryData.fetch(categoryPdas["preseed"]);
+        console.log("Pre-seed PDA fetch succeded:", preseedCat);
+      } catch (e: any) {
+        console.log("Pre-seed PDA fetch failed:", e);
+      }
     } catch (e: any) {
-      console.log(e);
+      console.log((await e.getLogs()).join("\n"));
       throw e;
     }
   });
@@ -212,7 +264,13 @@ describe("sbarterTokenPrograms (devnet)", function() {
     // build accounts for tge (see IDL)
     const accounts: Record<string, PublicKey> = {
       master: master.publicKey,
+      masterPda: masterPda,
       masterAta, // master ATA PDA (IDl names it masterAta pda)
+      preSeedCat: categoryPdas["preseed"],
+      seedCat: categoryPdas["seed"],
+      institutionalCat: categoryPdas["institutional"],
+      vgpCat: categoryPdas["vgp"],
+      foundersCat: categoryPdas["founders"],
       marketingCat: categoryPdas["marketing"],
       marketingAta: categoryAtas["marketing"],
       liquidityCat: categoryPdas["liquidity"],
@@ -264,10 +322,24 @@ describe("sbarterTokenPrograms (devnet)", function() {
   it("invoke transferCategoryVestings 48 times and track balances", async () => {
     const getBalances = async () => {
       const out = {};
-      for (const cat of CATEGORY_NAMES) {
+      for (const cat of INVESTOR_CATEGORY_NAMES) {
         try {
           const acc = await getAccount(connection, categoryAtas[cat], "confirmed", TOKEN_2022_PROGRAM_ID);
-          const category = await program.account.categoryData.fetch(categoryPdas[cat]);
+          const category = await program.account.investorCategoryData.fetch(categoryPdas[cat]);
+          out[cat] = {
+            amount: acc.amount, pda: {
+              cliffMonthsRemaining: category.cliffMonthsRemaining,
+              vestingMonthsRemaining: category.vestingMonthsRemaining
+            }
+          };
+        } catch {
+          out[cat] = "error";
+        }
+      }
+      for (const cat of FUNCTIONAL_CATEGORY_NAMES) {
+        try {
+          const acc = await getAccount(connection, categoryAtas[cat], "confirmed", TOKEN_2022_PROGRAM_ID);
+          const category = await program.account.functionalCategoryData.fetch(categoryPdas[cat]);
           out[cat] = {
             amount: acc.amount, pda: {
               cliffMonthsRemaining: category.cliffMonthsRemaining,
@@ -293,6 +365,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     for (let i = 0; i < 48; i++) {
       const accounts: Record<string, PublicKey> = {
         master: master.publicKey,
+        masterPda: masterPda,
         masterAta: masterAta,
         preSeedCat: categoryPdas["preseed"],
         preSeedAta: categoryAtas["preseed"],

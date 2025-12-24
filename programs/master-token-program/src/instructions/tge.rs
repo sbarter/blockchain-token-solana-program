@@ -26,7 +26,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     require_keys_eq!(
         ctx.accounts.master_ata.key(),
         get_associated_token_address_with_program_id(
-            &ctx.accounts.master.to_account_info().key(),
+            &ctx.accounts.master_pda.key(),
             &ctx.accounts.mint.key(),
             &token_2022::ID,
         ),
@@ -96,7 +96,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
         to: ctx.accounts.marketing_ata.to_account_info(),
-        authority: ctx.accounts.master.to_account_info(),
+        authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
@@ -105,7 +105,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
         to: ctx.accounts.liquidity_ata.to_account_info(),
-        authority: ctx.accounts.master.to_account_info(),
+        authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
@@ -114,7 +114,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
         to: ctx.accounts.reserve_ata.to_account_info(),
-        authority: ctx.accounts.master.to_account_info(),
+        authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
@@ -131,8 +131,20 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
 pub struct Tge<'info> {
     #[account(mut, signer, address = crate::MASTER_WALLET)]
     pub master: Signer<'info>,
-    /// CHECK: created by Initialize, checked to be owned by marketing_cat
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"master", mint.key().as_ref()],
+        bump
+    )]
+    /// CHECK: pda authority
+    pub master_pda: AccountInfo<'info>,
+    /// CHECK: created by Initialize, checked to be owned by master_pda
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = master_pda,
+        associated_token::token_program = associated_token_program
+    )]
     pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
@@ -171,8 +183,14 @@ pub struct Tge<'info> {
         bump
     )]
     pub marketing_cat: Account<'info, FunctionalCategoryData>,
-    /// CHECK: created by Initialize, checked to be owned by marketing_cat
-    #[account(mut)]
+    /// CHECK: provided category authority, no checks
+    pub marketing_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = marketing_authority,
+        associated_token::token_program = associated_token_program
+    )]
     pub marketing_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(

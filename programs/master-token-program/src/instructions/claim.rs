@@ -59,7 +59,7 @@ pub fn investor_claim_tokens<'info>(
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.category_ata.to_account_info(),
             to: ctx.accounts.investor_ata.to_account_info(),
-            authority: ctx.accounts.program_authority.to_account_info(),
+            authority: ctx.accounts.category.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
@@ -105,15 +105,12 @@ pub struct InvestorClaimTokens<'info> {
     #[account(
         mut,
         associated_token::mint = mint,
-        associated_token::authority = program_authority,
+        associated_token::authority = category,
         associated_token::token_program = associated_token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-    #[account(address = crate::ID)]
-    /// CHECK: Has to be this program's ID
-    pub program_authority: AccountInfo<'info>,
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
