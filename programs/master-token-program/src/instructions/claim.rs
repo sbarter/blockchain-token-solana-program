@@ -18,6 +18,9 @@ pub fn investor_claim_tokens<'info>(
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
 
+    let cliff_pre = category.cliff_months_remaining;
+    let vesting_pre = category.vesting_months_remaining;
+
     let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
@@ -35,16 +38,20 @@ pub fn investor_claim_tokens<'info>(
 
     let mut total_tokens = 0;
     for _ in 0..total_months {
+        if !investor.first_month_skipped {
+            investor.first_month_skipped = true;
+            continue;
+        }
         if investor.vesting_months_remaining == 0 {
             break;
         }
         if investor.cliff_months_remaining > 0 {
-            investor.cliff_months_remaining -= total_months;
+            investor.cliff_months_remaining -= 1;
             continue;
         }
         if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0 {
             total_tokens += category.monthly_allocation;
-            investor.vesting_months_remaining -= total_months;
+            investor.vesting_months_remaining -= 1;
             continue;
         }
     }
@@ -56,7 +63,13 @@ pub fn investor_claim_tokens<'info>(
             mint: ctx.accounts.mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
+        if transfer.is_err() {
+            msg!("Unable to transfer tokens from the category. You can always try again.");
+            investor.cliff_months_remaining = cliff_pre;
+            investor.vesting_months_remaining = vesting_pre;
+            transfer?;
+        }
     }
     investor.months_claimed += total_months;
 

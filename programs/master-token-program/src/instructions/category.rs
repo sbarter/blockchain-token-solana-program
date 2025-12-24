@@ -23,6 +23,9 @@ fn update_vesting_for_investor_category<'info>(
         )
     );
 
+    let cliff_pre = category.cliff_months_remaining;
+    let vesting_pre = category.vesting_months_remaining;
+
     let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
@@ -44,12 +47,12 @@ fn update_vesting_for_investor_category<'info>(
             break;
         }
         if category.cliff_months_remaining > 0 {
-            category.cliff_months_remaining -= total_months;
+            category.cliff_months_remaining -= 1;
             continue;
         }
         if category.cliff_months_remaining == 0 && category.vesting_months_remaining > 0 {
             total_tokens += category.monthly_allocation;
-            category.vesting_months_remaining -= total_months;
+            category.vesting_months_remaining -= 1;
             continue;
         }
     }
@@ -61,7 +64,13 @@ fn update_vesting_for_investor_category<'info>(
             mint: mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
-        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
+        if transfer.is_err() {
+            msg!("Unable to transfer tokens from to category. This really shouldn't happen.");
+            category.cliff_months_remaining = cliff_pre;
+            category.vesting_months_remaining = vesting_pre;
+            transfer?;
+        }
     }
     category.months_claimed += total_months;
 
@@ -85,6 +94,9 @@ fn update_vesting_for_functional_category<'info>(
         )
     );
 
+    let cliff_pre = category.cliff_months_remaining;
+    let vesting_pre = category.vesting_months_remaining;
+
     let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
@@ -95,7 +107,10 @@ fn update_vesting_for_functional_category<'info>(
     let months_elapsed = (since_tge / VESTING_MONTH) as u8;
     let total_months = months_elapsed.saturating_sub(category.months_claimed);
 
-    require!(total_months > 0, crate::error::ErrorCode::ClaimUnavailable);
+    if total_months == 0 {
+        msg!("No claim available.");
+        return Ok(());
+    }
 
     let mut total_tokens = 0;
     for _ in 0..total_months {
@@ -120,7 +135,13 @@ fn update_vesting_for_functional_category<'info>(
             mint: mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
-        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
+        if transfer.is_err() {
+            msg!("Unable to transfer tokens to the category. This really shouldn't happen.");
+            category.cliff_months_remaining = cliff_pre;
+            category.vesting_months_remaining = vesting_pre;
+            transfer?;
+        }
     }
     category.months_claimed += total_months;
 

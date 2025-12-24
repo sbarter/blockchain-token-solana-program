@@ -14,6 +14,4 @@ pub enum ErrorCode {
     InvestorIndex,
     #[msg("Unable to allocate or move this amount of tokens")]
     TooManyTokensAllocated,
-    #[msg("No tokens available to claim")]
-    ClaimUnavailable,
 }
