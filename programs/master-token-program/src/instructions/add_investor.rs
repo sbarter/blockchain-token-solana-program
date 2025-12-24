@@ -16,6 +16,7 @@ pub fn add_investor_to_category<'info>(
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
 
+    require!(category.is_open, crate::error::ErrorCode::CategoryClosed);
     require!(category.cliff_started_at != 0, crate::error::ErrorCode::TgeNotHappened);
     require_eq!(category.investor_count + 1, new_investor_index, crate::error::ErrorCode::InvestorIndex);
     require_gte!(

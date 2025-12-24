@@ -105,7 +105,7 @@ pub struct InvestorClaimTokens<'info> {
     #[account(
         mut,
         associated_token::mint = mint,
-        associated_token::authority = investor_pda.wallet,
+        associated_token::authority = program_authority,
         associated_token::token_program = associated_token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,

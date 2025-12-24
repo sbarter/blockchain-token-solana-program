@@ -94,7 +94,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     let cpi_accounts = associated_token::Create {
         payer: ctx.accounts.master.to_account_info(),
         associated_token: ctx.accounts.master_ata.as_ref().clone(),
-        authority: ctx.accounts.system_program.to_account_info(),
+        authority: ctx.accounts.program_authority.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
         token_program: ctx.accounts.token_program.to_account_info(),
@@ -354,6 +354,9 @@ pub struct Initialize<'info> {
     /// CHECK: will be initialized
     pub liquidity_ata: UncheckedAccount<'info>,
 
+    #[account(address = crate::ID)]
+    /// CHECK: Has to be this program's ID
+    pub program_authority: AccountInfo<'info>,
     #[account(mut, mint::authority = master)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,

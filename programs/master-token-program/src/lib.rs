@@ -97,12 +97,20 @@ pub mod sbarter_token_programs {
             monthly_allocation,
         )
     }
-    //
-    // pub fn withdraw_from_category<'info>(ctx: Context<'_, '_, '_, 'info, ()>) -> Result<()> {
-    //     Ok(())
-    // }
-    //
-    // pub fn deposit_into_category<'info>(ctx: Context<'_, '_, '_, 'info, ()>) -> Result<()> {
-    //     Ok(())
-    // }
+
+    pub fn withdraw_from_category<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
+        category_seed: String,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::withdraw::withdraw_category_tokens(ctx, category_seed, amount)
+    }
+
+    pub fn deposit_into_category<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
+        category_seed: String,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::deposit::deposit_category_tokens(ctx, category_seed, amount)
+    }
 }

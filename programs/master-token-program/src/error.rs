@@ -14,4 +14,6 @@ pub enum ErrorCode {
     InvestorIndex,
     #[msg("Unable to allocate or move this amount of tokens")]
     TooManyTokensAllocated,
+    #[msg("Category is closed. No investors can be added.")]
+    CategoryClosed,
 }
