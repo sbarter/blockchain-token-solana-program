@@ -54,7 +54,7 @@ pub struct WithdrawCategoryTokens<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = category,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
@@ -66,7 +66,7 @@ pub struct WithdrawCategoryTokens<'info> {
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = recipient,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub recipient_ata: InterfaceAccount<'info, TokenAccount>,
 

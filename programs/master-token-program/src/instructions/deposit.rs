@@ -40,7 +40,7 @@ pub struct DepositCategoryTokens<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = sender,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub sender_ata: InterfaceAccount<'info, TokenAccount>,
 
@@ -55,7 +55,7 @@ pub struct DepositCategoryTokens<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = category,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 

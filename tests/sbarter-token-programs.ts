@@ -47,8 +47,8 @@ const FUNCTIONAL_CATEGORY_NAMES = [
 
 const FUNCTIONAL_CATEGORY_AUTHORITIES = {
   marketing: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
-  reserve: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
-  liquidity: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+  reserve: new PublicKey("BdRUCurxjZvzBurS8QzzEKQ8iPCpzMYTz2YTgqnw9ZGY"),
+  liquidity: new PublicKey("2eg4xRrj742edVzGAfd3wnmXAMzhAcR1XdJoBARx3hcE"),
 };
 
 const ALL_CATEGORY_NAMES = INVESTOR_CATEGORY_NAMES.concat(FUNCTIONAL_CATEGORY_NAMES)
@@ -272,10 +272,13 @@ describe("sbarterTokenPrograms (devnet)", function() {
       vgpCat: categoryPdas["vgp"],
       foundersCat: categoryPdas["founders"],
       marketingCat: categoryPdas["marketing"],
+      marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
       marketingAta: categoryAtas["marketing"],
       liquidityCat: categoryPdas["liquidity"],
+      liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
       liquidityAta: categoryAtas["liquidity"],
       reserveCat: categoryPdas["reserve"],
+      reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
       reserveAta: categoryAtas["reserve"],
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,

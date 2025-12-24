@@ -269,7 +269,7 @@ pub struct TransferCategoryVestings<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = master_pda,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     /// CHECK: created by Initialize
     pub master_ata: InterfaceAccount<'info, TokenAccount>,

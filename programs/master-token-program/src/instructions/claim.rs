@@ -91,7 +91,7 @@ pub struct InvestorClaimTokens<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = investor_pda.wallet,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub investor_ata: InterfaceAccount<'info, TokenAccount>,
 
@@ -106,7 +106,7 @@ pub struct InvestorClaimTokens<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = category,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 

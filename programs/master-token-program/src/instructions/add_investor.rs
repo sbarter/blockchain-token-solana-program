@@ -64,7 +64,7 @@ pub struct AddInvestorToCategory<'info> {
         payer = master,
         associated_token::mint = mint, 
         associated_token::authority = investor_wallet, 
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub investor_ata: InterfaceAccount<'info, TokenAccount>,
     #[account(

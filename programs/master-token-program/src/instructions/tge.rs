@@ -143,7 +143,7 @@ pub struct Tge<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = master_pda,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
     pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
@@ -182,9 +182,9 @@ pub struct Tge<'info> {
         seeds = [MARKETING_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub marketing_cat: Account<'info, FunctionalCategoryData>,
+    pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: provided category authority, no checks
-    pub marketing_authority: UncheckedAccount<'info>,
+    pub marketing_authority: AccountInfo<'info>,
     #[account(
         mut,
         associated_token::mint = mint,
@@ -198,9 +198,16 @@ pub struct Tge<'info> {
         seeds = [LIQUIDITY_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub liquidity_cat: Account<'info, FunctionalCategoryData>,
+    pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,
+    /// CHECK: provided category authority, no checks
+    pub liquidity_authority: AccountInfo<'info>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
-    #[account(mut)]
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = liquidity_authority,
+        associated_token::token_program = associated_token_program
+    )]
     pub liquidity_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
@@ -208,9 +215,16 @@ pub struct Tge<'info> {
         seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
-    pub reserve_cat: Account<'info, FunctionalCategoryData>,
+    pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
+    /// CHECK: provided category authority, no checks
+    pub reserve_authority: AccountInfo<'info>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
-    #[account(mut)]
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = reserve_authority,
+        associated_token::token_program = associated_token_program
+    )]
     pub reserve_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, mint::authority = master)]
