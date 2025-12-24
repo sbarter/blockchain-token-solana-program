@@ -29,7 +29,6 @@ pub fn add_investor_to_category<'info>(
     // has to wait an extra month if joined during vesting
     investor.first_month_skipped = category.cliff_months_remaining > 0;
     investor.monthly_allocation = monthly_allocation;
-    investor.cliff_started_at = category.cliff_started_at;
     investor.months_claimed = 0;
     investor.cliff_months_remaining = category.cliff_months_remaining;
     investor.vesting_months_remaining = category.vesting_months_remaining;
