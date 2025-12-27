@@ -9,7 +9,7 @@ use crate::{states::InvestorCategoryData, SBT_DECIMALS};
 
 pub fn withdraw_category_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
-    _category_seed: String,
+    category_seed: String,
     amount: u64,
 ) -> Result<()> {
     let category = &ctx.accounts.category;
@@ -24,13 +24,24 @@ pub fn withdraw_category_tokens<'info>(
         crate::error::ErrorCode::TgeNotHappened
     );
 
+    let master_seeds = &[
+        category_seed.as_bytes(),
+        &ctx.accounts.mint.key().to_bytes(),
+        &[ctx.bumps.category],
+    ];
+    let signer_seeds = &[&master_seeds[..]];
+
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.category_ata.to_account_info(),
         to: ctx.accounts.recipient_ata.to_account_info(),
         authority: ctx.accounts.category.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS as u8)?;
     ctx.accounts.category.unallocated_total_tokens -= amount;
 

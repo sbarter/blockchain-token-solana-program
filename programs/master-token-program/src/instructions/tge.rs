@@ -60,24 +60,32 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         crate::error::ErrorCode::AtaMismatch,
     );
 
+    let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
+    let signer_seeds = &[&master_seeds[..]];
+
     let cpi_accounts = MintTo {
         mint: ctx.accounts.mint.to_account_info(),
         to: ctx.accounts.master_ata.to_account_info(),
-        authority: ctx.accounts.master.to_account_info(),
+        authority: ctx.accounts.master_pda.to_account_info(),
     };
     token_2022::mint_to(
-        CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts),
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+            signer_seeds,
+        ),
         TOTAL_MINT_SUPPLY,
     )?;
 
     let cpi_accounts_set = SetAuthority {
         account_or_mint: ctx.accounts.mint.to_account_info(),
-        current_authority: ctx.accounts.master.to_account_info(),
+        current_authority: ctx.accounts.master_pda.to_account_info(),
     };
     token_2022::set_authority(
-        CpiContext::new(
+        CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             cpi_accounts_set,
+            signer_seeds,
         ),
         AuthorityType::MintTokens,
         None,
@@ -99,7 +107,11 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(cpi_ctx, MARKETING_LIQUID_SUPPLY, SBT_DECIMALS as u8)?;
 
     let cpi_accounts = TransferChecked {
@@ -108,7 +120,11 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(cpi_ctx, LIQUIDITY_LIQUID_SUPPLY, SBT_DECIMALS as u8)?;
 
     let cpi_accounts = TransferChecked {
@@ -117,7 +133,11 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(
         cpi_ctx,
         RESERVE_LIQUID_SUPPLY + RESERVE_PADDING,
@@ -133,7 +153,7 @@ pub struct Tge<'info> {
     pub master: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"master", mint.key().as_ref()],
+        seeds = [b"master"],
         bump
     )]
     /// CHECK: pda authority
@@ -148,30 +168,35 @@ pub struct Tge<'info> {
     pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
+        mut,
         seeds = [PRE_SEED_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
     pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
+        mut,
         seeds = [SEED_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
     pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
+        mut,
         seeds = [INSTITUTIONAL_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
     pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
+        mut,
         seeds = [VGP_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
     pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
+        mut,
         seeds = [FOUNDERS_CATEGORY.0, mint.key().as_ref()],
         bump
     )]
@@ -189,9 +214,9 @@ pub struct Tge<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = marketing_authority,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
-    pub marketing_ata: InterfaceAccount<'info, TokenAccount>,
+    pub marketing_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -206,9 +231,9 @@ pub struct Tge<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = liquidity_authority,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
-    pub liquidity_ata: InterfaceAccount<'info, TokenAccount>,
+    pub liquidity_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -223,11 +248,11 @@ pub struct Tge<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = reserve_authority,
-        associated_token::token_program = associated_token_program
+        associated_token::token_program = token_program
     )]
-    pub reserve_ata: InterfaceAccount<'info, TokenAccount>,
+    pub reserve_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, mint::authority = master)]
+    #[account(mut, mint::authority = master_pda)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,

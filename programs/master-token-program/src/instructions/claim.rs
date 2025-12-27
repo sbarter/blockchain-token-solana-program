@@ -12,11 +12,18 @@ use crate::{
 
 pub fn investor_claim_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
-    _category_seed: String,
+    category_seed: String,
     _investor_index: u32,
 ) -> Result<()> {
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
+
+    let master_seeds = &[
+        category_seed.as_bytes(),
+        &ctx.accounts.mint.key().to_bytes(),
+        &[ctx.bumps.category],
+    ];
+    let signer_seeds = &[&master_seeds[..]];
 
     let cliff_pre = category.cliff_months_remaining;
     let vesting_pre = category.vesting_months_remaining;
@@ -62,7 +69,11 @@ pub fn investor_claim_tokens<'info>(
             authority: ctx.accounts.category.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+            signer_seeds,
+        );
         let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
         if transfer.is_err() {
             msg!("Unable to transfer tokens from the category. You can always try again.");

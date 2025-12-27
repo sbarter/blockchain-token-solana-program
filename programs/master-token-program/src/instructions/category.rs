@@ -11,6 +11,7 @@ fn update_vesting_for_investor_category<'info>(
     category_ata: AccountInfo<'info>,
     master_pda: &AccountInfo<'info>,
     master_ata: &InterfaceAccount<'info, TokenAccount>,
+    pda_seeds: &[&[&[u8]]],
     mint: &InterfaceAccount<'info, Mint>,
     token_program: &Program<'info, Token2022>,
 ) -> Result<()> {
@@ -63,7 +64,8 @@ fn update_vesting_for_investor_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
+        let cpi_ctx =
+            CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
         let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
         if transfer.is_err() {
             msg!("Unable to transfer tokens from to category. This really shouldn't happen.");
@@ -82,6 +84,7 @@ fn update_vesting_for_functional_category<'info>(
     category_ata: AccountInfo<'info>,
     master_pda: &AccountInfo<'info>,
     master_ata: &InterfaceAccount<'info, TokenAccount>,
+    pda_seeds: &[&[&[u8]]],
     mint: &InterfaceAccount<'info, Mint>,
     token_program: &Program<'info, Token2022>,
 ) -> Result<()> {
@@ -134,7 +137,8 @@ fn update_vesting_for_functional_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new(token_program.to_account_info(), cpi_accounts);
+        let cpi_ctx =
+            CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
         let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
         if transfer.is_err() {
             msg!("Unable to transfer tokens to the category. This really shouldn't happen.");
@@ -155,12 +159,15 @@ pub fn transfer_category_vestings<'info>(
     let master_pda = &ctx.accounts.master_pda;
     let mint = &ctx.accounts.mint;
     let token_program = &ctx.accounts.token_program;
+    let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
+    let signer_seeds = &[&master_seeds[..]];
 
     if update_vesting_for_investor_category(
         &mut ctx.accounts.pre_seed_cat,
         ctx.accounts.pre_seed_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -173,6 +180,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.seed_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -185,6 +193,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.institutional_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -197,6 +206,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.vgp_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -209,6 +219,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.founders_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -221,6 +232,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.marketing_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -233,6 +245,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.reserve_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -245,6 +258,7 @@ pub fn transfer_category_vestings<'info>(
         ctx.accounts.liquidity_ata.to_account_info(),
         master_pda,
         master_ata,
+        signer_seeds,
         mint,
         token_program,
     )
@@ -259,7 +273,7 @@ pub fn transfer_category_vestings<'info>(
 pub struct TransferCategoryVestings<'info> {
     #[account(
         mut,
-        seeds = [b"master", mint.key().as_ref()],
+        seeds = [b"master"],
         bump
     )]
     /// CHECK: pda authority

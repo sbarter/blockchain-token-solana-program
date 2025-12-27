@@ -125,7 +125,7 @@ pub const MARKETING_CATEGORY: (&[u8], FunctionalCategoryData) = (
 pub const RESERVE_CATEGORY: (&[u8], FunctionalCategoryData) = (
     b"reserve",
     FunctionalCategoryData {
-        wallet: pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+        wallet: pubkey!("BdRUCurxjZvzBurS8QzzEKQ8iPCpzMYTz2YTgqnw9ZGY"),
         monthly_allocation: RESERVE_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
@@ -137,7 +137,7 @@ pub const RESERVE_CATEGORY: (&[u8], FunctionalCategoryData) = (
 pub const LIQUIDITY_CATEGORY: (&[u8], FunctionalCategoryData) = (
     b"liquidity",
     FunctionalCategoryData {
-        wallet: pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
+        wallet: pubkey!("2eg4xRrj742edVzGAfd3wnmXAMzhAcR1XdJoBARx3hcE"),
         monthly_allocation: LIQUIDITY_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,

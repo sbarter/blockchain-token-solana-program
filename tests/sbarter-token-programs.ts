@@ -70,9 +70,6 @@ const sendAndConfirmTx = async (tx: Transaction, connection: Connection, wallet:
 };
 
 describe("sbarterTokenPrograms (devnet)", function() {
-  // devnet network calls can be slow
-  this.timeout(1000 * 60 * 10);
-
   let provider: anchor.AnchorProvider;
   let connection: Connection;
   let program: anchor.Program<SbarterTokenPrograms>
@@ -114,6 +111,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
       console.log(info);
     }
 
+    [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master")], PROGRAM_ID);
+
     // 2) create a new token-2022 mint with master as mint authority
     // decimals: 6 (adjust if you want)
     const decimals = 6;
@@ -123,7 +122,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     mint = await createMint(
       connection,
       master, // payer
-      master.publicKey, // mint authority
+      masterPda, // mint authority
       null, // freeze authority
       decimals,
       Keypair.generate(),
@@ -137,6 +136,18 @@ describe("sbarterTokenPrograms (devnet)", function() {
       DEVNET_EXPLORER_ADDR(mint)
     );
 
+    // master ATA (master wallet's ATA for this mint)
+    masterAta = await getAssociatedTokenAddress(
+      mint,
+      masterPda,
+      true,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    // Log ATAs and PDAs explorer links
+    console.log("Master:", master.publicKey.toBase58());
+    console.log("Master ATA:", masterAta.toBase58(), DEVNET_EXPLORER_ADDR(masterAta));
     // derive PDAs for categories: use [utf8(categoryName), mintPubkey] as seeds and program id
     for (const cat of INVESTOR_CATEGORY_NAMES) {
       const [pda] = PublicKey.findProgramAddressSync(
@@ -174,19 +185,6 @@ describe("sbarterTokenPrograms (devnet)", function() {
       categoryAtas[cat] = ata;
     }
 
-    [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master"), mint.toBuffer()], PROGRAM_ID);
-    // master ATA (master wallet's ATA for this mint)
-    masterAta = await getAssociatedTokenAddress(
-      mint,
-      masterPda,
-      true,
-      TOKEN_2022_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    // Log ATAs and PDAs explorer links
-    console.log("Master:", master.publicKey.toBase58());
-    console.log("Master ATA:", masterAta.toBase58(), DEVNET_EXPLORER_ADDR(masterAta));
     for (const cat of ALL_CATEGORY_NAMES) {
       console.log(
         `${cat} pda:`,
@@ -199,6 +197,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
         DEVNET_EXPLORER_ADDR(categoryAtas[cat])
       );
     }
+
   });
 
   it("invoke initialize", async () => {
@@ -323,6 +322,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
   });
 
   it("invoke transferCategoryVestings 48 times and track balances", async () => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     const getBalances = async () => {
       const out = {};
       for (const cat of INVESTOR_CATEGORY_NAMES) {
@@ -361,46 +361,62 @@ describe("sbarterTokenPrograms (devnet)", function() {
       }
       return out;
     };
+    const sendCategoryTx = async function*() {
+      for (let i = 1; ; i++) {
+        const accounts: Record<string, PublicKey> = {
+          master: master.publicKey,
+          masterPda: masterPda,
+          masterAta: masterAta,
+          preSeedCat: categoryPdas["preseed"],
+          preSeedAta: categoryAtas["preseed"],
+          seedCat: categoryPdas["seed"],
+          seedAta: categoryAtas["seed"],
+          institutionalCat: categoryPdas["institutional"],
+          institutionalAta: categoryAtas["institutional"],
+          vgpCat: categoryPdas["vgp"],
+          vgpAta: categoryAtas["vgp"],
+          marketingCat: categoryPdas["marketing"],
+          marketingAta: categoryAtas["marketing"],
+          foundersCat: categoryPdas["founders"],
+          foundersAta: categoryAtas["founders"],
+          reserveCat: categoryPdas["reserve"],
+          reserveAta: categoryAtas["reserve"],
+          liquidityCat: categoryPdas["liquidity"],
+          liquidityAta: categoryAtas["liquidity"],
+          mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_PID,
+        };
+        console.log("\n");
+
+        const tx = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).transaction();
+        const sig = await sendAndConfirmTx(tx, connection, wallet);
+        console.log(`transferCategoryVestings #${i} tx:`, DEVNET_EXPLORER_TX(sig));
+        console.log(await getBalances());
+        console.log("\n");
+
+        yield sig;
+      }
+    };
+
+    let categoryGen = sendCategoryTx();
 
     const beforeBalances = await getBalances();
     console.log("Balances before transferCategoryVestings:", beforeBalances);
 
-    for (let i = 0; i < 48; i++) {
-      const accounts: Record<string, PublicKey> = {
-        master: master.publicKey,
-        masterPda: masterPda,
-        masterAta: masterAta,
-        preSeedCat: categoryPdas["preseed"],
-        preSeedAta: categoryAtas["preseed"],
-        seedCat: categoryPdas["seed"],
-        seedAta: categoryAtas["seed"],
-        institutionalCat: categoryPdas["institutional"],
-        institutionalAta: categoryAtas["institutional"],
-        vgpCat: categoryPdas["vgp"],
-        vgpAta: categoryAtas["vgp"],
-        marketingCat: categoryPdas["marketing"],
-        marketingAta: categoryAtas["marketing"],
-        foundersCat: categoryPdas["founders"],
-        foundersAta: categoryAtas["founders"],
-        reserveCat: categoryPdas["reserve"],
-        reserveAta: categoryAtas["reserve"],
-        liquidityCat: categoryPdas["liquidity"],
-        liquidityAta: categoryAtas["liquidity"],
-        mint,
-        tokenProgram: TOKEN_2022_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: SYSTEM_PROGRAM_PID,
-      };
-      console.log("\n");
-
-      // const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
-
-      const tx = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).signers([master]).transaction();
-      const sig = await sendAndConfirmTx(tx, connection, wallet);
-      console.log(`transferCategoryVestings #${i + 1} tx:`, DEVNET_EXPLORER_TX(sig));
-      console.log(await getBalances());
-      console.log("\n");
-    }
+    console.log("Sleeping for 60 seconds (+1 cycle).");
+    await sleep(60 * 1000);
+    await categoryGen.next();
+    console.log("Sleeping for 125 seconds (+2 cycles).");
+    await sleep(125 * 1000);
+    await categoryGen.next();
+    console.log("Sleeping for 10 seconds (+0 cycles).");
+    await sleep(10 * 1000);
+    await categoryGen.next();
+    console.log("Sleeping for 600 seconds (+10 cycles).");
+    await sleep(600 * 1000);
+    await categoryGen.next();
 
     // No strict asserts beyond ensuring the test completed — but ensure function ran
     assert.ok(true);
