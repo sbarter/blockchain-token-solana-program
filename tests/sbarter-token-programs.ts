@@ -19,8 +19,10 @@ import {
   getAccount,
   TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
+import { getLogs } from "@solana-developers/helpers";
 
 const PROGRAM_ID = new PublicKey("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
 const SYSTEM_PROGRAM_PID = SystemProgram.programId;
@@ -82,6 +84,9 @@ describe("sbarterTokenPrograms (devnet)", function() {
   const categoryAtas: Record<string, PublicKey> = {};
   let masterPda: PublicKey;
   let masterAta: PublicKey;
+
+  let preseedInvestors: Array<{ wallet: Keypair; pda: PublicKey; ata: PublicKey }> = [];
+  let seedInvestors: Array<{ wallet: Keypair; pda: PublicKey; ata: PublicKey }> = [];
 
   before(async () => {
     // 1) load local keypair from ~/.config/solana/id.json (master)
@@ -259,6 +264,85 @@ describe("sbarterTokenPrograms (devnet)", function() {
     }
   });
 
+  it("initialize closed category investors", async () => {
+    const accounts = (category: PublicKey, investorPda: PublicKey, investorWallet: PublicKey, investorAta: PublicKey) => ({
+      master: master.publicKey,
+      category: category,
+      investorPda: investorPda,
+      investorWallet: investorWallet,
+      investorAta: investorAta,
+      mint,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_PID
+    });
+
+    for (let i = 1; i <= 5; i++) {
+      const investorWallet = Keypair.generate();
+      const [investorPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("preseed"), Buffer.from(new Uint8Array(new Uint32Array([i]).buffer)), mint.toBuffer()],
+        program.programId
+      );
+      const investorAta = getAssociatedTokenAddressSync(
+        mint,
+        investorWallet.publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      preseedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
+
+      const tx = await program.methods
+        .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000)) // 1M tokens monthly allocation
+        .accounts(accounts(categoryPdas["preseed"], investorPda, investorWallet.publicKey, investorAta))
+        .signers([master])
+        .transaction();
+
+      let sig: string;
+      try {
+        sig = await sendAndConfirmTx(tx, connection, wallet);
+      } catch (e: any) {
+        console.log(await e.getLogs());
+      }
+      console.log(`Added preseed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+    }
+
+    for (let i = 1; i <= 2; i++) {
+      const investorWallet = Keypair.generate();
+      const [investorPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("seed"), Buffer.from(new Uint8Array(new Uint32Array([i]).buffer)), mint.toBuffer()],
+        program.programId
+      );
+      const investorAta = getAssociatedTokenAddressSync(
+        mint,
+        investorWallet.publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      seedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
+
+      const tx = await program.methods
+        .addInvestorToCategory("seed", i, new anchor.BN(2000000 * 1000000)) // 2M tokens monthly allocation
+        .accounts(accounts(categoryPdas["seed"], investorPda, investorWallet.publicKey, investorAta))
+        .signers([master])
+        .transaction();
+
+      let sig: string;
+      try {
+        sig = await sendAndConfirmTx(tx, connection, wallet);
+      } catch (e: any) {
+        console.log(await e.getLogs());
+      }
+      console.log(`Added seed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+    }
+
+    console.log(`Total preseed investors: ${preseedInvestors.length}`);
+    console.log(`Total seed investors: ${seedInvestors.length}`);
+  });
+
   it("invoke tge: mints to master and transfers to marketing & liquidity; check mint authority", async () => {
     // build accounts for tge (see IDL)
     const accounts: Record<string, PublicKey> = {
@@ -405,20 +489,69 @@ describe("sbarterTokenPrograms (devnet)", function() {
     const beforeBalances = await getBalances();
     console.log("Balances before transferCategoryVestings:", beforeBalances);
 
-    console.log("Sleeping for 60 seconds (+1 cycle).");
-    await sleep(60 * 1000);
-    await categoryGen.next();
-    console.log("Sleeping for 125 seconds (+2 cycles).");
-    await sleep(125 * 1000);
-    await categoryGen.next();
-    console.log("Sleeping for 10 seconds (+0 cycles).");
+    console.log("Sleeping for 10 seconds (+1 cycle).");
     await sleep(10 * 1000);
     await categoryGen.next();
-    console.log("Sleeping for 600 seconds (+10 cycles).");
-    await sleep(600 * 1000);
+    console.log("Sleeping for 22 seconds (+2 cycles).");
+    await sleep(22 * 1000);
+    await categoryGen.next();
+    console.log("Sleeping for 1 second (+0 cycles).");
+    await sleep(1 * 1000);
+    await categoryGen.next();
+    console.log("Sleeping for 100 seconds (+10 cycles).");
+    await sleep(100 * 1000);
     await categoryGen.next();
 
     // No strict asserts beyond ensuring the test completed — but ensure function ran
     assert.ok(true);
+  });
+
+  it("claim funds for investors", async () => {
+    const accounts = (categorySeed: string, investorPda: PublicKey, investorAta: PublicKey) => ({
+      category: categoryPdas[categorySeed],
+      categoryAta: categoryAtas[categorySeed],
+      investorPda: investorPda,
+      investorAta: investorAta,
+      mint,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_PID
+    });
+
+    for (let i = 1; i <= 5; i++) {
+      const tx = await program.methods
+        .investorClaimTokens("preseed", i)
+        .accounts(accounts("preseed", preseedInvestors[i - 1].pda, preseedInvestors[i - 1].ata))
+        .transaction();
+
+      let sig: string;
+      try {
+        sig = await sendAndConfirmTx(tx, connection, wallet);
+      } catch (e: any) {
+        console.log(await e.getLogs());
+        console.log(await getLogs(connection, sig));
+      }
+      console.log(`Claimed for preseed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+      const balance = await connection.getTokenAccountBalance(preseedInvestors[i - 1].ata);
+      console.log(`Preseed investor ${i} balance: ${balance.value.uiAmount}`);
+    }
+
+    for (let i = 1; i <= 2; i++) {
+      const tx = await program.methods
+        .investorClaimTokens("seed", i)
+        .accounts(accounts("seed", seedInvestors[i - 1].pda, seedInvestors[i - 1].ata))
+        .transaction();
+
+      let sig: string;
+      try {
+        sig = await sendAndConfirmTx(tx, connection, wallet);
+        console.log(await getLogs(connection, sig));
+      } catch (e: any) {
+        console.log(await e.getLogs());
+      }
+      console.log(`Claimed for seed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+      const balance = await connection.getTokenAccountBalance(seedInvestors[i - 1].ata);
+      console.log(`Seed investor ${i} balance: ${balance.value.uiAmount}`);
+    }
   });
 });

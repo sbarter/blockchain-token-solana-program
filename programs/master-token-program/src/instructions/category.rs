@@ -290,7 +290,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [PRE_SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [PRE_SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub pre_seed_cat: Account<'info, InvestorCategoryData>,
@@ -300,7 +300,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub seed_cat: Account<'info, InvestorCategoryData>,
@@ -310,7 +310,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [INSTITUTIONAL_CATEGORY.0, mint.key().as_ref()],
+        seeds = [INSTITUTIONAL_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub institutional_cat: Account<'info, InvestorCategoryData>,
@@ -320,7 +320,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [VGP_CATEGORY.0, mint.key().as_ref()],
+        seeds = [VGP_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub vgp_cat: Account<'info, InvestorCategoryData>,
@@ -330,7 +330,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [FOUNDERS_CATEGORY.0, mint.key().as_ref()],
+        seeds = [FOUNDERS_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub founders_cat: Account<'info, InvestorCategoryData>,
@@ -340,7 +340,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [MARKETING_CATEGORY.0, mint.key().as_ref()],
+        seeds = [MARKETING_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub marketing_cat: Account<'info, FunctionalCategoryData>,
@@ -350,7 +350,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
+        seeds = [RESERVE_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub reserve_cat: Account<'info, FunctionalCategoryData>,
@@ -360,7 +360,7 @@ pub struct TransferCategoryVestings<'info> {
 
     #[account(
         mut,
-        seeds = [LIQUIDITY_CATEGORY.0, mint.key().as_ref()],
+        seeds = [LIQUIDITY_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub liquidity_cat: Account<'info, FunctionalCategoryData>,

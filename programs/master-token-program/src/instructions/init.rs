@@ -119,7 +119,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         &mut ctx.accounts.marketing_cat,
         &ctx.accounts.marketing_ata,
         &ctx.accounts.marketing_authority,
-        MARKETING_CATEGORY.1,
+        MARKETING_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -135,7 +135,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         &mut ctx.accounts.reserve_cat,
         &ctx.accounts.reserve_ata,
         &ctx.accounts.reserve_authority,
-        RESERVE_CATEGORY.1,
+        RESERVE_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -151,7 +151,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         &mut ctx.accounts.liquidity_cat,
         &ctx.accounts.liquidity_ata,
         &ctx.accounts.liquidity_authority,
-        LIQUIDITY_CATEGORY.1,
+        LIQUIDITY_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -167,7 +167,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     if initialize_investor_category(
         &mut ctx.accounts.pre_seed_cat,
         &ctx.accounts.pre_seed_ata,
-        PRE_SEED_CATEGORY.1,
+        PRE_SEED_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -182,7 +182,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     if initialize_investor_category(
         &mut ctx.accounts.seed_cat,
         &ctx.accounts.seed_ata,
-        SEED_CATEGORY.1,
+        SEED_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -197,7 +197,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     if initialize_investor_category(
         &mut ctx.accounts.institutional_cat,
         &ctx.accounts.institutional_ata,
-        INSTITUTIONAL_CATEGORY.1,
+        INSTITUTIONAL_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -212,7 +212,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     if initialize_investor_category(
         &mut ctx.accounts.vgp_cat,
         &ctx.accounts.vgp_ata,
-        VGP_CATEGORY.1,
+        VGP_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -227,7 +227,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     if initialize_investor_category(
         &mut ctx.accounts.founders_cat,
         &ctx.accounts.founders_ata,
-        FOUNDERS_CATEGORY.1,
+        FOUNDERS_CATEGORY.data,
         master,
         mint,
         token_program,
@@ -267,7 +267,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = InvestorCategoryData::LEN,
-        seeds = [PRE_SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [PRE_SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
@@ -279,7 +279,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = InvestorCategoryData::LEN,
-        seeds = [SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
@@ -291,7 +291,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = InvestorCategoryData::LEN,
-        seeds = [INSTITUTIONAL_CATEGORY.0, mint.key().as_ref()],
+        seeds = [INSTITUTIONAL_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
@@ -303,7 +303,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = InvestorCategoryData::LEN,
-        seeds = [VGP_CATEGORY.0, mint.key().as_ref()],
+        seeds = [VGP_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
@@ -315,7 +315,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = InvestorCategoryData::LEN,
-        seeds = [FOUNDERS_CATEGORY.0, mint.key().as_ref()],
+        seeds = [FOUNDERS_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub founders_cat: Box<Account<'info, InvestorCategoryData>>,
@@ -327,7 +327,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = FunctionalCategoryData::LEN,
-        seeds = [MARKETING_CATEGORY.0, mint.key().as_ref()],
+        seeds = [MARKETING_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
@@ -341,7 +341,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = FunctionalCategoryData::LEN,
-        seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
+        seeds = [RESERVE_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
@@ -355,7 +355,7 @@ pub struct Initialize<'info> {
         init,
         payer = master,
         space = FunctionalCategoryData::LEN,
-        seeds = [LIQUIDITY_CATEGORY.0, mint.key().as_ref()],
+        seeds = [LIQUIDITY_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,

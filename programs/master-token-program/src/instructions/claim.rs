@@ -36,7 +36,7 @@ pub fn investor_claim_tokens<'info>(
 
     let since_tge = now.saturating_sub(category.cliff_started_at);
     let months_elapsed = (since_tge / VESTING_MONTH) as u8;
-    let total_months = months_elapsed.saturating_sub(category.months_claimed);
+    let total_months = months_elapsed.saturating_sub(investor.months_claimed);
 
     if total_months == 0 {
         msg!("No claim available.");
@@ -57,7 +57,7 @@ pub fn investor_claim_tokens<'info>(
             continue;
         }
         if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0 {
-            total_tokens += category.monthly_allocation;
+            total_tokens += investor.monthly_allocation;
             investor.vesting_months_remaining -= 1;
             continue;
         }

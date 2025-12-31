@@ -16,4 +16,6 @@ pub enum ErrorCode {
     TooManyTokensAllocated,
     #[msg("Category is closed. No investors can be added.")]
     CategoryClosed,
+    #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE.")]
+    UnintializedInvestors,
 }

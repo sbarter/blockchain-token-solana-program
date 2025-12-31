@@ -40,9 +40,15 @@ impl FunctionalCategoryData {
     pub const LEN: usize = 8 + 32 + 8 + 8 + 1 + 1 + 1;
 }
 
-pub const PRE_SEED_CATEGORY: (&[u8], InvestorCategoryData) = (
-    b"preseed",
-    InvestorCategoryData {
+pub struct Category<T> {
+    pub seed: &'static [u8],
+    pub data: T,
+    pub pre_investors: u32,
+}
+
+pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
+    seed: b"preseed",
+    data: InvestorCategoryData {
         monthly_allocation: PRESEED_MONTHLY_SUPPLY,
         unallocated_total_tokens: PRESEED_MONTHLY_SUPPLY * 24,
         cliff_started_at: 0,
@@ -52,11 +58,12 @@ pub const PRE_SEED_CATEGORY: (&[u8], InvestorCategoryData) = (
         investor_count: 0,
         is_open: false,
     },
-);
+    pre_investors: 5,
+};
 
-pub const SEED_CATEGORY: (&[u8], InvestorCategoryData) = (
-    b"seed",
-    InvestorCategoryData {
+pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {
+    seed: b"seed",
+    data: InvestorCategoryData {
         monthly_allocation: SEED_MONTHLY_SUPPLY,
         unallocated_total_tokens: SEED_MONTHLY_SUPPLY * 18,
         cliff_started_at: 0,
@@ -66,11 +73,12 @@ pub const SEED_CATEGORY: (&[u8], InvestorCategoryData) = (
         investor_count: 0,
         is_open: false,
     },
-);
+    pre_investors: 2,
+};
 
-pub const INSTITUTIONAL_CATEGORY: (&[u8], InvestorCategoryData) = (
-    b"institutional",
-    InvestorCategoryData {
+pub const INSTITUTIONAL_CATEGORY: Category<InvestorCategoryData> = Category {
+    seed: b"institutional",
+    data: InvestorCategoryData {
         monthly_allocation: INSTITUTIONAL_MONTHLY_SUPPLY,
         unallocated_total_tokens: INSTITUTIONAL_MONTHLY_SUPPLY * 24,
         cliff_started_at: 0,
@@ -80,11 +88,12 @@ pub const INSTITUTIONAL_CATEGORY: (&[u8], InvestorCategoryData) = (
         investor_count: 0,
         is_open: true,
     },
-);
+    pre_investors: 0,
+};
 
-pub const VGP_CATEGORY: (&[u8], InvestorCategoryData) = (
-    b"vgp",
-    InvestorCategoryData {
+pub const VGP_CATEGORY: Category<InvestorCategoryData> = Category {
+    seed: b"vgp",
+    data: InvestorCategoryData {
         monthly_allocation: VGP_MONTHLY_SUPPLY,
         unallocated_total_tokens: VGP_MONTHLY_SUPPLY * 24,
         cliff_started_at: 0,
@@ -94,11 +103,12 @@ pub const VGP_CATEGORY: (&[u8], InvestorCategoryData) = (
         investor_count: 0,
         is_open: true,
     },
-);
+    pre_investors: 0,
+};
 
-pub const FOUNDERS_CATEGORY: (&[u8], InvestorCategoryData) = (
-    b"founders",
-    InvestorCategoryData {
+pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
+    seed: b"founders",
+    data: InvestorCategoryData {
         monthly_allocation: FOUNDERS_MONTHLY_SUPPLY,
         unallocated_total_tokens: FOUNDERS_MONTHLY_SUPPLY * 24,
         cliff_started_at: 0,
@@ -108,11 +118,12 @@ pub const FOUNDERS_CATEGORY: (&[u8], InvestorCategoryData) = (
         investor_count: 0,
         is_open: true,
     },
-);
+    pre_investors: 0,
+};
 
-pub const MARKETING_CATEGORY: (&[u8], FunctionalCategoryData) = (
-    b"marketing",
-    FunctionalCategoryData {
+pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
+    seed: b"marketing",
+    data: FunctionalCategoryData {
         wallet: pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
         monthly_allocation: MARKETING_MONTHLY_SUPPLY,
         cliff_started_at: 0,
@@ -120,11 +131,12 @@ pub const MARKETING_CATEGORY: (&[u8], FunctionalCategoryData) = (
         cliff_months_remaining: 6,
         vesting_months_remaining: 36,
     },
-);
+    pre_investors: 0,
+};
 
-pub const RESERVE_CATEGORY: (&[u8], FunctionalCategoryData) = (
-    b"reserve",
-    FunctionalCategoryData {
+pub const RESERVE_CATEGORY: Category<FunctionalCategoryData> = Category {
+    seed: b"reserve",
+    data: FunctionalCategoryData {
         wallet: pubkey!("BdRUCurxjZvzBurS8QzzEKQ8iPCpzMYTz2YTgqnw9ZGY"),
         monthly_allocation: RESERVE_MONTHLY_SUPPLY,
         cliff_started_at: 0,
@@ -132,11 +144,12 @@ pub const RESERVE_CATEGORY: (&[u8], FunctionalCategoryData) = (
         cliff_months_remaining: 0,
         vesting_months_remaining: 48,
     },
-);
+    pre_investors: 0,
+};
 
-pub const LIQUIDITY_CATEGORY: (&[u8], FunctionalCategoryData) = (
-    b"liquidity",
-    FunctionalCategoryData {
+pub const LIQUIDITY_CATEGORY: Category<FunctionalCategoryData> = Category {
+    seed: b"liquidity",
+    data: FunctionalCategoryData {
         wallet: pubkey!("2eg4xRrj742edVzGAfd3wnmXAMzhAcR1XdJoBARx3hcE"),
         monthly_allocation: LIQUIDITY_MONTHLY_SUPPLY,
         cliff_started_at: 0,
@@ -144,4 +157,5 @@ pub const LIQUIDITY_CATEGORY: (&[u8], FunctionalCategoryData) = (
         cliff_months_remaining: 0,
         vesting_months_remaining: 12,
     },
-);
+    pre_investors: 0,
+};

@@ -20,6 +20,13 @@ use crate::{
     SBT_DECIMALS, TOTAL_MINT_SUPPLY,
 };
 
+fn has_enough_investors<'info>(
+    category: &Account<'info, InvestorCategoryData>,
+    target_count: u32,
+) -> bool {
+    !category.is_open && category.investor_count == target_count
+}
+
 pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
     // Already checked that `master` is the mint authority.
 
@@ -58,6 +65,15 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
             &token_2022::ID,
         ),
         crate::error::ErrorCode::AtaMismatch,
+    );
+
+    require!(
+        has_enough_investors(&ctx.accounts.pre_seed_cat, PRE_SEED_CATEGORY.pre_investors),
+        crate::error::ErrorCode::UnintializedInvestors
+    );
+    require!(
+        has_enough_investors(&ctx.accounts.seed_cat, SEED_CATEGORY.pre_investors),
+        crate::error::ErrorCode::UnintializedInvestors
     );
 
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
@@ -169,42 +185,42 @@ pub struct Tge<'info> {
 
     #[account(
         mut,
-        seeds = [PRE_SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [PRE_SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
         mut,
-        seeds = [SEED_CATEGORY.0, mint.key().as_ref()],
+        seeds = [SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
         mut,
-        seeds = [INSTITUTIONAL_CATEGORY.0, mint.key().as_ref()],
+        seeds = [INSTITUTIONAL_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
         mut,
-        seeds = [VGP_CATEGORY.0, mint.key().as_ref()],
+        seeds = [VGP_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
         mut,
-        seeds = [FOUNDERS_CATEGORY.0, mint.key().as_ref()],
+        seeds = [FOUNDERS_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub founders_cat: Box<Account<'info, InvestorCategoryData>>,
 
     #[account(
         mut,
-        seeds = [MARKETING_CATEGORY.0, mint.key().as_ref()],
+        seeds = [MARKETING_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
@@ -220,7 +236,7 @@ pub struct Tge<'info> {
 
     #[account(
         mut,
-        seeds = [LIQUIDITY_CATEGORY.0, mint.key().as_ref()],
+        seeds = [LIQUIDITY_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,
@@ -237,7 +253,7 @@ pub struct Tge<'info> {
 
     #[account(
         mut,
-        seeds = [RESERVE_CATEGORY.0, mint.key().as_ref()],
+        seeds = [RESERVE_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
     pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
