@@ -25,6 +25,7 @@ anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
 anchor-spl = "0.31.1"
 const_format = "0.2.35"
 spl-token = "9.0.0"
+tuktuk-program = "0.3.2"
 
 
 [lints.rust]

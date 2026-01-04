@@ -1,3 +1,32 @@
+// {
+//   "pubkey": "5uYFC1hNzD7v9iCkjqogwKdR3qQHEFehzDBXHDmFFkfD",
+//   "id": 161,
+//   "capacity": 10,
+//   "update_authority": "GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH",
+//   "name": "category_claims",
+//   "min_crank_reward": 1000000,
+//   "balance": 1100000000,
+//   "stale_task_age": 999999999
+// }
+// 
+// {
+//   "pubkey": "siwajZYai6gT8sQhsk8Ex6FKVUt4wrjQook2jVMu9CW",
+//   "id": 0,
+//   "user_cron_jobs": "67LY9ZDx5vZsWUrA5de7eWsUXBAzHYrrHcN1bgNWMTBV",
+//   "task_queue": "5uYFC1hNzD7v9iCkjqogwKdR3qQHEFehzDBXHDmFFkfD",
+//   "authority": "GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH",
+//   "free_tasks_per_transaction": 0,
+//   "schedule": "0 0 * * * *",
+//   "name": "category_claims_cron",
+//   "current_exec_ts": 1767146400,
+//   "current_transaction_id": 0,
+//   "next_transaction_id": 0,
+//   "num_tasks_per_queue_call": 8,
+//   "removed_from_queue": false,
+//   "balance": 1000000000,
+//   "next_schedule_task": "DbN5TVnXeJ8SxtHXewyKZykWk4CVotmuN2frhG8LTyyx"
+// }
+
 import * as fs from "fs";
 import * as path from "path";
 import { strict as assert } from "assert";

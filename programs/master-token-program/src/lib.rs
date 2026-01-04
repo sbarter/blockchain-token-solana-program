@@ -67,6 +67,13 @@ pub mod sbarter_token_programs {
         instructions::init::initialize(ctx)
     }
 
+    pub fn initialize_tuktuk<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitializeTuktuk<'info>>,
+        task_queue_name: String,
+    ) -> Result<()> {
+        instructions::init_tuktuk::initialize_tuktuk(ctx, task_queue_name)
+    }
+
     pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
         instructions::tge::start_tge(ctx)
     }
@@ -83,6 +90,15 @@ pub mod sbarter_token_programs {
         investor_index: u32,
     ) -> Result<()> {
         instructions::claim::investor_claim_tokens(ctx, category_seed, investor_index)
+    }
+
+    pub fn investor_auto_claim<'info>(
+        ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
+        category_seed: String,
+        investor_index: u32,
+        task_id: u16,
+    ) -> Result<()> {
+        instructions::autoclaim::tuktuk_claim_tokens(ctx, category_seed, investor_index, task_id)
     }
 
     pub fn add_investor_to_category<'info>(

@@ -1,15 +1,19 @@
 pub mod add_investor;
+pub mod autoclaim;
 pub mod category;
 pub mod claim;
 pub mod deposit;
 pub mod init;
+pub mod init_tuktuk;
 pub mod tge;
 pub mod withdraw;
 
 pub use add_investor::*;
+pub use autoclaim::*;
 pub use category::*;
 pub use claim::*;
 pub use deposit::*;
 pub use init::*;
+pub use init_tuktuk::*;
 pub use tge::*;
 pub use withdraw::*;

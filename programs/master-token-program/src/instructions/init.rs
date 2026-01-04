@@ -7,6 +7,33 @@ use anchor_spl::{
 
 use crate::states::category::*;
 
+fn create_master_ata<'info>(ctx: &Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
+    let expected_master_ata = get_associated_token_address_with_program_id(
+        &ctx.accounts.master_pda.key(),
+        &ctx.accounts.mint.key(),
+        &token_2022::ID,
+    );
+    require_keys_eq!(ctx.accounts.master_ata.key(), expected_master_ata);
+
+    let cpi_accounts = associated_token::Create {
+        payer: ctx.accounts.master.to_account_info(),
+        associated_token: ctx.accounts.master_ata.as_ref().clone(),
+        authority: ctx.accounts.master_pda.to_account_info(),
+        mint: ctx.accounts.mint.to_account_info(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+        token_program: ctx.accounts.token_program.to_account_info(),
+    };
+
+    let cpi_prog = ctx.accounts.associated_token_program.to_account_info();
+    let cpi_ctx = CpiContext::new(cpi_prog, cpi_accounts);
+    if let Err(e) = associated_token::create(cpi_ctx) {
+        msg!("Failed to initialize master ATA!");
+        Err(e)
+    } else {
+        Ok(())
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn initialize_investor_category<'info>(
     category: &mut Account<'info, InvestorCategoryData>,
@@ -84,30 +111,12 @@ fn initialize_functional_category<'info>(
 }
 
 pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-    let mut failed = false;
-
-    let expected_master_ata = get_associated_token_address_with_program_id(
-        &ctx.accounts.master_pda.key(),
-        &ctx.accounts.mint.key(),
-        &token_2022::ID,
+    require_keys_eq!(
+        ctx.accounts.mint.mint_authority.unwrap_or_default().key(),
+        ctx.accounts.master.key()
     );
-    require_keys_eq!(ctx.accounts.master_ata.key(), expected_master_ata);
 
-    let cpi_accounts = associated_token::Create {
-        payer: ctx.accounts.master.to_account_info(),
-        associated_token: ctx.accounts.master_ata.as_ref().clone(),
-        authority: ctx.accounts.master_pda.to_account_info(),
-        mint: ctx.accounts.mint.to_account_info(),
-        system_program: ctx.accounts.system_program.to_account_info(),
-        token_program: ctx.accounts.token_program.to_account_info(),
-    };
-
-    let cpi_prog = ctx.accounts.associated_token_program.to_account_info();
-    let cpi_ctx = CpiContext::new(cpi_prog, cpi_accounts);
-    if associated_token::create(cpi_ctx).is_err() {
-        failed = true;
-        msg!("Failed to initialize master ATA!");
-    }
+    create_master_ata(&ctx)?;
 
     let master = &ctx.accounts.master;
     let mint = &ctx.accounts.mint;
@@ -115,7 +124,7 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
     let associated_token_program = &ctx.accounts.associated_token_program;
     let token_program = &ctx.accounts.token_program;
 
-    if initialize_functional_category(
+    if let Err(e) = initialize_functional_category(
         &mut ctx.accounts.marketing_cat,
         &ctx.accounts.marketing_ata,
         &ctx.accounts.marketing_authority,
@@ -125,13 +134,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for marketing!");
+        return Err(e);
     }
-    if initialize_functional_category(
+    if let Err(e) = initialize_functional_category(
         &mut ctx.accounts.reserve_cat,
         &ctx.accounts.reserve_ata,
         &ctx.accounts.reserve_authority,
@@ -141,13 +148,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for reserve!");
+        return Err(e);
     }
-    if initialize_functional_category(
+    if let Err(e) = initialize_functional_category(
         &mut ctx.accounts.liquidity_cat,
         &ctx.accounts.liquidity_ata,
         &ctx.accounts.liquidity_authority,
@@ -157,14 +162,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for liquidity!");
+        return Err(e);
     }
-
-    if initialize_investor_category(
+    if let Err(e) = initialize_investor_category(
         &mut ctx.accounts.pre_seed_cat,
         &ctx.accounts.pre_seed_ata,
         PRE_SEED_CATEGORY.data,
@@ -173,13 +175,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for pre-seed!");
+        return Err(e);
     }
-    if initialize_investor_category(
+    if let Err(e) = initialize_investor_category(
         &mut ctx.accounts.seed_cat,
         &ctx.accounts.seed_ata,
         SEED_CATEGORY.data,
@@ -188,13 +188,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for seed!");
+        return Err(e);
     }
-    if initialize_investor_category(
+    if let Err(e) = initialize_investor_category(
         &mut ctx.accounts.institutional_cat,
         &ctx.accounts.institutional_ata,
         INSTITUTIONAL_CATEGORY.data,
@@ -203,13 +201,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for institutional!");
+        return Err(e);
     }
-    if initialize_investor_category(
+    if let Err(e) = initialize_investor_category(
         &mut ctx.accounts.vgp_cat,
         &ctx.accounts.vgp_ata,
         VGP_CATEGORY.data,
@@ -218,13 +214,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for vgp!");
+        return Err(e);
     }
-    if initialize_investor_category(
+    if let Err(e) = initialize_investor_category(
         &mut ctx.accounts.founders_cat,
         &ctx.accounts.founders_ata,
         FOUNDERS_CATEGORY.data,
@@ -233,17 +227,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
         token_program,
         associated_token_program,
         system_program,
-    )
-    .is_err()
-    {
-        failed = true;
+    ) {
         msg!("Failed to initialize category for founders!");
+        return Err(e);
     }
-    if failed {
-        err!(crate::error::ErrorCode::InitError)
-    } else {
-        Ok(())
-    }
+    Ok(())
 }
 
 #[derive(Accounts)]
