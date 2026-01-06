@@ -87,7 +87,7 @@ pub mod sbarter_token_programs {
     pub fn investor_claim_tokens<'info>(
         ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
         category_seed: String,
-        investor_index: u32,
+        investor_index: u16,
     ) -> Result<()> {
         instructions::claim::investor_claim_tokens(ctx, category_seed, investor_index)
     }
@@ -95,23 +95,30 @@ pub mod sbarter_token_programs {
     pub fn investor_auto_claim<'info>(
         ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
         category_seed: String,
-        investor_index: u32,
-        task_id: u16,
+        investor_index: u16,
+        task_queue_name: String,
     ) -> Result<()> {
-        instructions::autoclaim::tuktuk_claim_tokens(ctx, category_seed, investor_index, task_id)
+        instructions::autoclaim::tuktuk_claim_tokens(
+            ctx,
+            category_seed,
+            investor_index,
+            task_queue_name,
+        )
     }
 
     pub fn add_investor_to_category<'info>(
         ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
-        new_investor_index: u32,
+        new_investor_index: u16,
         monthly_allocation: u64,
+        task_queue_name: String,
     ) -> Result<()> {
         instructions::add_investor::add_investor_to_category(
             ctx,
             category_seed,
             new_investor_index,
             monthly_allocation,
+            task_queue_name,
         )
     }
 

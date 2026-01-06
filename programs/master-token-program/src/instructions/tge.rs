@@ -22,7 +22,7 @@ use crate::{
 
 fn has_enough_investors<'info>(
     category: &Account<'info, InvestorCategoryData>,
-    target_count: u32,
+    target_count: u16,
 ) -> bool {
     !category.is_open && category.investor_count == target_count
 }

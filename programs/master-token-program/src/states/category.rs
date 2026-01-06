@@ -16,7 +16,7 @@ pub struct InvestorCategoryData {
     pub months_claimed: u8,
     pub cliff_months_remaining: u8,
     pub vesting_months_remaining: u8,
-    pub investor_count: u32,
+    pub investor_count: u16,
     pub is_open: bool,
 }
 
@@ -43,7 +43,7 @@ impl FunctionalCategoryData {
 pub struct Category<T> {
     pub seed: &'static [u8],
     pub data: T,
-    pub pre_investors: u32,
+    pub pre_investors: u16,
 }
 
 pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {

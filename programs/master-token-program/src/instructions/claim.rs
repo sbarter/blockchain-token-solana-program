@@ -13,7 +13,7 @@ use crate::{
 pub fn investor_claim_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
     category_seed: String,
-    _investor_index: u32,
+    _investor_index: u16,
 ) -> Result<()> {
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
@@ -88,7 +88,7 @@ pub fn investor_claim_tokens<'info>(
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, investor_index: u32)]
+#[instruction(category_seed: String, investor_index: u16)]
 pub struct InvestorClaimTokens<'info> {
     #[account(
         mut,

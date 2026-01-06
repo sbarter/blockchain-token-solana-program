@@ -15,7 +15,7 @@ use tuktuk_program::{
         program::Tuktuk,
     },
     types::QueueTaskArgsV0,
-    CompiledTransactionV0, TransactionSourceV0, TuktukConfigV0,
+    TransactionSourceV0, TuktukConfigV0,
 };
 
 use crate::{
@@ -23,26 +23,26 @@ use crate::{
     SBT_DECIMALS, VESTING_MONTH,
 };
 
-fn reschedule_itself<'info>(
+fn schedule_autoclaim<'info>(
     ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
+    timestamp: i64,
     category_seed: String,
-    investor_index: u32,
-    task_id: u16,
-    signer_seeds: &[&[&[u8]]],
+    investor_index: u16,
+    task_queue_name: String,
 ) -> Result<()> {
-    let now = Clock::get()?.unix_timestamp;
+    let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
+    let signer_seeds = &[&master_seeds[..]];
 
     let ix = crate::instruction::InvestorAutoClaim {
         category_seed,
         investor_index,
-        task_id: task_id + 1,
+        task_queue_name,
     };
-    let mut accounts = ctx.accounts;
-    accounts.task = todo!();
+
     let (compiled_tx, _) = compile_transaction(
         vec![Instruction {
             program_id: crate::ID,
-            accounts: accounts.to_account_metas(None).to_vec(),
+            accounts: ctx.accounts.to_account_metas(None).to_vec(),
             data: ix.data(),
         }],
         vec![vec![b"master".to_vec(), vec![ctx.bumps.master_pda]]],
@@ -51,11 +51,11 @@ fn reschedule_itself<'info>(
 
     let cpi_accounts = QueueTaskV0 {
         queue_authority: ctx.accounts.master_pda.to_account_info(),
-        task_queue_authority: ctx.accounts.master_pda.to_account_info(),
+        task_queue_authority: ctx.accounts.task_queue_authority.to_account_info(),
         task_queue: ctx.accounts.task_queue.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
         payer: ctx.accounts.task_queue.to_account_info(),
-        task: ctx.accounts.task.to_account_info(),
+        task: ctx.accounts.next_task.to_account_info(),
     };
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(),
@@ -63,8 +63,8 @@ fn reschedule_itself<'info>(
         signer_seeds,
     );
     let args = QueueTaskArgsV0 {
-        id: task_id + 1,
-        trigger: tuktuk_program::TriggerV0::Timestamp(now + VESTING_MONTH as i64),
+        id: investor_index,
+        trigger: tuktuk_program::TriggerV0::Timestamp(timestamp),
         transaction: TransactionSourceV0::CompiledV0(compiled_tx),
         crank_reward: Some(10000),
         free_tasks: 1,
@@ -76,14 +76,15 @@ fn reschedule_itself<'info>(
 pub fn tuktuk_claim_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
     category_seed: String,
-    investor_index: u32,
-    task_id: u16,
+    investor_index: u16,
+    task_queue_name: String,
 ) -> Result<()> {
+    let seed_bytes = category_seed.clone();
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
 
     let master_seeds = &[
-        category_seed.as_bytes(),
+        seed_bytes.as_bytes(),
         &ctx.accounts.mint.key().to_bytes(),
         &[ctx.bumps.category],
     ];
@@ -148,11 +149,23 @@ pub fn tuktuk_claim_tokens<'info>(
     }
     investor.months_claimed += total_months;
 
+    let now = Clock::get()?.unix_timestamp;
+    if let Err(e) = schedule_autoclaim(
+        ctx,
+        now + VESTING_MONTH as i64,
+        category_seed,
+        investor_index,
+        task_queue_name,
+    ) {
+        msg!("Failed to reschedule autoclaim!");
+        msg!(&format!("{e}"));
+    }
+
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, investor_index: u32, task_queue_name: String, task_id: u16)]
+#[instruction(category_seed: String, investor_index: u16, task_queue_name: String)]
 pub struct TuktukAutoClaim<'info> {
     #[account(
         mut,
@@ -194,11 +207,11 @@ pub struct TuktukAutoClaim<'info> {
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
-        seeds = [b"task", task_queue.key().as_ref(), &(task_id + 1).to_le_bytes()],
+        seeds = [b"task", task_queue.key().as_ref(), &(investor_index).to_le_bytes()],
         bump
     )]
     /// CHECK: Will be created
-    pub task: UncheckedAccount<'info>,
+    pub next_task: UncheckedAccount<'info>,
     #[account(
         seeds = [
             b"task_queue",
@@ -209,8 +222,6 @@ pub struct TuktukAutoClaim<'info> {
         seeds::program = tuktuk_program.key()
     )]
     pub task_queue: AccountInfo<'info>,
-    /// CHECK: should be created by the init task queue ix,
-    /// but doesn't exist before invocation.
     #[account(
         seeds = [
             "task_queue_name_mapping".as_bytes(),
@@ -220,9 +231,7 @@ pub struct TuktukAutoClaim<'info> {
         bump,
         seeds::program = tuktuk_program.key()
     )]
-    pub task_queue_name_mapping: UncheckedAccount<'info>,
-    /// CHECK: should be created by the init task queue ix,
-    /// but doesn't exist before invocation.
+    pub task_queue_name_mapping: AccountInfo<'info>,
     #[account(
         seeds = [
             b"task_queue_authority",
@@ -232,7 +241,7 @@ pub struct TuktukAutoClaim<'info> {
         bump,
         seeds::program = tuktuk_program.key()
     )]
-    pub task_queue_authority: UncheckedAccount<'info>,
+    pub task_queue_authority: AccountInfo<'info>,
     #[account(
         seeds = [b"tuktuk_config"],
         bump,
