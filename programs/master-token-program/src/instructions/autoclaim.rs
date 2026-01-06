@@ -58,7 +58,7 @@ fn schedule_autoclaim<'info>(
         task: ctx.accounts.next_task.to_account_info(),
     };
     let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.tuktuk_program.to_account_info(),
         cpi_accounts,
         signer_seeds,
     );
@@ -82,6 +82,26 @@ pub fn tuktuk_claim_tokens<'info>(
     let seed_bytes = category_seed.clone();
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
+
+    let (expected_next_task, _) = Pubkey::find_program_address(
+        &[
+            b"task",
+            ctx.accounts.task_queue.key().as_ref(),
+            &investor_index.to_le_bytes(),
+        ],
+        &ctx.accounts.tuktuk_program.key(),
+    );
+    require_keys_eq!(ctx.accounts.next_task.key(), expected_next_task);
+
+    let (expected_mapping, _) = Pubkey::find_program_address(
+        &[
+            "task_queue_name_mapping".as_bytes(),
+            ctx.accounts.tuktuk_config.key().as_ref(),
+            &hash(task_queue_name.as_bytes()).to_bytes(),
+        ],
+        &ctx.accounts.tuktuk_program.key(),
+    );
+    require_keys_eq!(ctx.accounts.task_queue_name_mapping.key(), expected_mapping);
 
     let master_seeds = &[
         seed_bytes.as_bytes(),
@@ -206,33 +226,17 @@ pub struct TuktukAutoClaim<'info> {
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(
-        seeds = [b"task", task_queue.key().as_ref(), &(investor_index).to_le_bytes()],
-        bump
-    )]
+    #[account(mut)]
     /// CHECK: Will be created
     pub next_task: UncheckedAccount<'info>,
-    #[account(
-        seeds = [
-            b"task_queue",
-            tuktuk_config.key().as_ref(),
-            &tuktuk_config.next_task_queue_id.to_le_bytes()[..]
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account(mut)]
+    /// CHECK: created by init tuktuk
     pub task_queue: AccountInfo<'info>,
-    #[account(
-        seeds = [
-            "task_queue_name_mapping".as_bytes(),
-            tuktuk_config.key().as_ref(),
-            &hash(task_queue_name.as_bytes()).to_bytes()
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account()]
+    /// CHECK: created by init tuktuk
     pub task_queue_name_mapping: AccountInfo<'info>,
     #[account(
+        mut,
         seeds = [
             b"task_queue_authority",
             task_queue.key().as_ref(),
@@ -241,6 +245,7 @@ pub struct TuktukAutoClaim<'info> {
         bump,
         seeds::program = tuktuk_program.key()
     )]
+    /// CHECK: created by init tuktuk
     pub task_queue_authority: AccountInfo<'info>,
     #[account(
         seeds = [b"tuktuk_config"],

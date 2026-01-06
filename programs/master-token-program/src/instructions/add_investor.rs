@@ -17,6 +17,7 @@ fn schedule_autoclaim<'info>(
 ) -> Result<()> {
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
+
     
     let ix = crate::instruction::InvestorAutoClaim {
         category_seed,
@@ -43,7 +44,7 @@ fn schedule_autoclaim<'info>(
         task: ctx.accounts.next_task.to_account_info(),
     };
     let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.tuktuk_program.to_account_info(),
         cpi_accounts,
         signer_seeds,
     );
@@ -75,7 +76,22 @@ pub fn add_investor_to_category<'info>(
         monthly_allocation * category.vesting_months_remaining as u64,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
+    
+    let (expected_next_task, _) = Pubkey::find_program_address(
+        &[b"task", ctx.accounts.task_queue.key().as_ref(), &new_investor_index.to_le_bytes()],
+        &ctx.accounts.tuktuk_program.key()
+    );
+    require_keys_eq!(ctx.accounts.next_task.key(), expected_next_task);
 
+    let (expected_mapping, _) = Pubkey::find_program_address(
+        &[
+            "task_queue_name_mapping".as_bytes(),
+            ctx.accounts.tuktuk_config.key().as_ref(),
+            &hash(task_queue_name.as_bytes()).to_bytes()
+        ],
+        &ctx.accounts.tuktuk_program.key()
+    );
+    require_keys_eq!(ctx.accounts.task_queue_name_mapping.key(), expected_mapping);
     
     investor.wallet = ctx.accounts.investor_wallet.key();
     // has to wait an extra month if joined during vesting
@@ -134,7 +150,7 @@ pub struct AddInvestorToCategory<'info> {
     )]
     pub investor_pda: Account<'info, Investor>,
     
-    /// CHECK: Frankly we don't care if it's funded or anything.
+    /// CHECK: any investor wallet
     pub investor_wallet: UncheckedAccount<'info>,
     
     #[account(
@@ -152,33 +168,17 @@ pub struct AddInvestorToCategory<'info> {
     )]
     pub category: Account<'info, InvestorCategoryData>,
 
-    #[account(
-        seeds = [b"task", task_queue.key().as_ref(), &(new_investor_index).to_le_bytes()],
-        bump
-    )]
+    #[account(mut)]
     /// CHECK: Will be created
     pub next_task: UncheckedAccount<'info>,
-    #[account(
-        seeds = [
-            b"task_queue",
-            tuktuk_config.key().as_ref(),
-            &tuktuk_config.next_task_queue_id.to_le_bytes()[..]
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
-    pub task_queue: AccountInfo<'info>,
-    #[account(
-        seeds = [
-            "task_queue_name_mapping".as_bytes(),
-            tuktuk_config.key().as_ref(),
-            &hash(task_queue_name.as_bytes()).to_bytes()
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account(mut)]
+    /// CHECK: created by init tuktuk
+    pub task_queue: UncheckedAccount<'info>,
+    #[account()]
+    /// CHECK: created by init tuktuk
     pub task_queue_name_mapping: AccountInfo<'info>,
     #[account(
+        mut,
         seeds = [
             b"task_queue_authority",
             task_queue.key().as_ref(),
@@ -187,6 +187,7 @@ pub struct AddInvestorToCategory<'info> {
         bump,
         seeds::program = tuktuk_program.key()
     )]
+    /// CHECK: created by init tuktuk
     pub task_queue_authority: AccountInfo<'info>,
     #[account(
         seeds = [b"tuktuk_config"],

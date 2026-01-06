@@ -140,42 +140,22 @@ pub struct InitializeTuktuk<'info> {
     pub master_pda: AccountInfo<'info>,
 
     #[account(mut)]
-    /// CHECK: will be initialized
+    /// CHECK: initialized by init
     pub master_ata: UncheckedAccount<'info>,
 
-    #[account(
-        seeds = [
-            b"task_queue",
-            tuktuk_config.key().as_ref(),
-            &tuktuk_config.next_task_queue_id.to_le_bytes()[..]
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account(mut)]
+    /// CHECK: will be created
     pub task_queue: AccountInfo<'info>,
     /// CHECK: should be created by the init task queue ix,
     /// but doesn't exist before invocation.
-    #[account(
-        seeds = [
-            "task_queue_name_mapping".as_bytes(),
-            tuktuk_config.key().as_ref(),
-            &hash(task_queue_name.as_bytes()).to_bytes()
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account(mut)]
+    /// CHECK: should be created by the init task queue ix,
+    /// but doesn't exist before invocation.
     pub task_queue_name_mapping: UncheckedAccount<'info>,
     /// CHECK: should be created by the init task queue ix,
     /// but doesn't exist before invocation.
-    #[account(
-        seeds = [
-            b"task_queue_authority",
-            task_queue.key().as_ref(),
-            master_pda.key().as_ref()
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
+    #[account(mut)]
+    /// CHECK: will be created
     pub task_queue_authority: UncheckedAccount<'info>,
     #[account(
         seeds = [b"tuktuk_config"],
