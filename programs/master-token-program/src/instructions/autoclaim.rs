@@ -11,6 +11,7 @@ use anchor_spl::{
 use tuktuk_program::{
     compile_transaction,
     tuktuk::{
+        self,
         cpi::{accounts::QueueTaskV0, queue_task_v0},
         program::Tuktuk,
     },
@@ -19,15 +20,51 @@ use tuktuk_program::{
 };
 
 use crate::{
-    states::{Investor, InvestorCategoryData},
+    states::{Investor, InvestorCategoryData, INVESTOR_CATEGORY_SEEDS},
     SBT_DECIMALS, VESTING_MONTH,
 };
+
+pub fn derive_task_pubkey(
+    category_seed: &str,
+    investor_index: u16,
+    task_queue: &Pubkey,
+    flipped: bool,
+) -> Result<Pubkey> {
+    const U16_MSB: u16 = 0x8000;
+    const CATEGORY_BITMASK: u16 = 0x7000;
+
+    let Some(category_id) = INVESTOR_CATEGORY_SEEDS
+        .iter()
+        .position(|&seed| seed == category_seed.as_bytes())
+    else {
+        return Err(crate::error::ErrorCode::CategorySeed.into());
+    };
+
+    // bit structure: FCCC0000 00000000
+    // F - flipped, so that a task can queue itself while existing
+    // C - 0-7 unique category id, so that task ids between categories don't clash
+    // the rest is investor index
+    let task_id = {
+        let mut task_id = investor_index;
+        if flipped {
+            task_id ^= U16_MSB;
+        }
+        task_id |= ((category_id as u16) << 12) & CATEGORY_BITMASK;
+        task_id
+    };
+    Ok(Pubkey::find_program_address(
+        &[b"task", task_queue.as_ref(), &task_id.to_le_bytes()],
+        &tuktuk::ID,
+    )
+    .0)
+}
 
 fn schedule_autoclaim<'info>(
     ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
     timestamp: i64,
     category_seed: String,
     investor_index: u16,
+    flipped: bool,
     task_queue_name: String,
 ) -> Result<()> {
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
@@ -36,6 +73,7 @@ fn schedule_autoclaim<'info>(
     let ix = crate::instruction::InvestorAutoClaim {
         category_seed,
         investor_index,
+        flipped: !flipped,
         task_queue_name,
     };
 
@@ -49,13 +87,18 @@ fn schedule_autoclaim<'info>(
     )
     .unwrap();
 
+    let next_task = if flipped {
+        ctx.accounts.next_task_flipped.to_account_info()
+    } else {
+        ctx.accounts.next_task.to_account_info()
+    };
     let cpi_accounts = QueueTaskV0 {
         queue_authority: ctx.accounts.master_pda.to_account_info(),
         task_queue_authority: ctx.accounts.task_queue_authority.to_account_info(),
         task_queue: ctx.accounts.task_queue.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
-        payer: ctx.accounts.task_queue.to_account_info(),
-        task: ctx.accounts.next_task.to_account_info(),
+        payer: ctx.accounts.master_pda.to_account_info(),
+        task: next_task,
     };
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.tuktuk_program.to_account_info(),
@@ -66,7 +109,7 @@ fn schedule_autoclaim<'info>(
         id: investor_index,
         trigger: tuktuk_program::TriggerV0::Timestamp(timestamp),
         transaction: TransactionSourceV0::CompiledV0(compiled_tx),
-        crank_reward: Some(10000),
+        crank_reward: None,
         free_tasks: 1,
         description: String::new(),
     };
@@ -77,21 +120,12 @@ pub fn tuktuk_claim_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
     category_seed: String,
     investor_index: u16,
+    flipped: bool,
     task_queue_name: String,
 ) -> Result<()> {
     let seed_bytes = category_seed.clone();
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
-
-    let (expected_next_task, _) = Pubkey::find_program_address(
-        &[
-            b"task",
-            ctx.accounts.task_queue.key().as_ref(),
-            &investor_index.to_le_bytes(),
-        ],
-        &ctx.accounts.tuktuk_program.key(),
-    );
-    require_keys_eq!(ctx.accounts.next_task.key(), expected_next_task);
 
     let (expected_mapping, _) = Pubkey::find_program_address(
         &[
@@ -102,6 +136,34 @@ pub fn tuktuk_claim_tokens<'info>(
         &ctx.accounts.tuktuk_program.key(),
     );
     require_keys_eq!(ctx.accounts.task_queue_name_mapping.key(), expected_mapping);
+
+    let Ok(expected_next_task) = derive_task_pubkey(
+        &category_seed,
+        investor_index,
+        &ctx.accounts.task_queue.key(),
+        flipped,
+    ) else {
+        return Err(crate::error::ErrorCode::TuktukTaskId.into());
+    };
+    require_keys_eq!(
+        expected_next_task,
+        ctx.accounts.next_task.key(),
+        crate::error::ErrorCode::TuktukTaskId
+    );
+
+    let Ok(expected_next_task_flipped) = derive_task_pubkey(
+        &category_seed,
+        investor_index,
+        &ctx.accounts.task_queue.key(),
+        !flipped,
+    ) else {
+        return Err(crate::error::ErrorCode::TuktukTaskId.into());
+    };
+    require_keys_eq!(
+        expected_next_task_flipped,
+        ctx.accounts.next_task_flipped.key(),
+        crate::error::ErrorCode::TuktukTaskId
+    );
 
     let master_seeds = &[
         seed_bytes.as_bytes(),
@@ -169,12 +231,19 @@ pub fn tuktuk_claim_tokens<'info>(
     }
     investor.months_claimed += total_months;
 
-    let now = Clock::get()?.unix_timestamp;
+    let cliff_started_at = category.cliff_started_at;
+    let next_cycle = {
+        let now = Clock::get()?.unix_timestamp;
+        let since_tge = now.saturating_sub(category.cliff_started_at as i64);
+        let months_elapsed = (since_tge / VESTING_MONTH as i64) as u8;
+        cliff_started_at as i64 + (VESTING_MONTH as i64 * (months_elapsed + 1) as i64)
+    };
     if let Err(e) = schedule_autoclaim(
         ctx,
-        now + VESTING_MONTH as i64,
+        next_cycle,
         category_seed,
         investor_index,
+        flipped,
         task_queue_name,
     ) {
         msg!("Failed to reschedule autoclaim!");
@@ -185,7 +254,7 @@ pub fn tuktuk_claim_tokens<'info>(
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, investor_index: u16, task_queue_name: String)]
+#[instruction(category_seed: String, investor_index: u16, flipped: bool, task_queue_name: String)]
 pub struct TuktukAutoClaim<'info> {
     #[account(
         mut,
@@ -229,6 +298,9 @@ pub struct TuktukAutoClaim<'info> {
     #[account(mut)]
     /// CHECK: Will be created
     pub next_task: UncheckedAccount<'info>,
+    #[account(mut)]
+    /// CHECK: Will be created
+    pub next_task_flipped: UncheckedAccount<'info>,
     #[account(mut)]
     /// CHECK: created by init tuktuk
     pub task_queue: AccountInfo<'info>,

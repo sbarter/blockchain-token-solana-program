@@ -111,11 +111,6 @@ fn initialize_functional_category<'info>(
 }
 
 pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-    require_keys_eq!(
-        ctx.accounts.mint.mint_authority.unwrap_or_default().key(),
-        ctx.accounts.master.key()
-    );
-
     create_master_ata(&ctx)?;
 
     let master = &ctx.accounts.master;

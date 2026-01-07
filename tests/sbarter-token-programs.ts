@@ -52,8 +52,14 @@ import {
 } from "@solana/spl-token";
 import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
 import { getLogs } from "@solana-developers/helpers";
+import { Tuktuk } from "@helium/tuktuk-idls/lib/types/tuktuk";
+import { init, taskKey, taskQueueAuthorityKey, taskQueueKey, taskQueueNameMappingKey, tuktukConfigKey } from "@helium/tuktuk-sdk";
+import { createHash } from "crypto";
+import { expect } from "chai";
+import { execSync } from "child_process";
 
 const PROGRAM_ID = new PublicKey("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
+const TUKTUK_PROGRAM_ID = new PublicKey("tuktukUrfhXT6ZT77QTU8RQtvgL967uRuVagWF57zVA");
 const SYSTEM_PROGRAM_PID = SystemProgram.programId;
 
 const DEVNET_EXPLORER_TX = (sig: string) =>
@@ -75,6 +81,8 @@ const FUNCTIONAL_CATEGORY_NAMES = [
   "reserve",
   "liquidity",
 ];
+
+const TASK_QUEUE_NAME = "Vesting automation";
 
 const FUNCTIONAL_CATEGORY_AUTHORITIES = {
   marketing: new PublicKey("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
@@ -100,13 +108,66 @@ const sendAndConfirmTx = async (tx: Transaction, connection: Connection, wallet:
   return signature;
 };
 
+const deriveTaskPubkey = (
+  categorySeed: string,
+  investorId: number,
+  taskQueue: PublicKey,
+  flipped: boolean
+): PublicKey => {
+  const U16_MSB = 0x8000;
+  const CATEGORY_BITMASK = 0x7000;
+
+  // Find category index
+  const categoryId = INVESTOR_CATEGORY_NAMES.findIndex(
+    (seed) => seed === categorySeed
+  );
+
+  if (categoryId === -1) {
+    throw new Error(`Invalid category seed: ${categorySeed}`);
+  }
+
+  // bit structure: FCCC0000 00000000
+  // F - flipped, so that a task can queue itself while existing
+  // C - 0-7 unique category id, so that task ids between categories don't clash
+  // the rest is investor index
+  let taskId = investorId;
+
+  if (flipped) {
+    taskId ^= U16_MSB;
+  }
+
+  taskId |= ((categoryId << 12) & CATEGORY_BITMASK);
+
+  // Convert task_id to little-endian bytes
+  const taskIdBuffer = Buffer.alloc(2);
+  taskIdBuffer.writeUInt16LE(taskId, 0);
+
+  // Find PDA
+  const [pda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('task'),
+      taskQueue.toBuffer(),
+      taskIdBuffer,
+    ],
+    TUKTUK_PROGRAM_ID
+  );
+
+  return pda;
+}
+
 describe("sbarterTokenPrograms (devnet)", function() {
   let provider: anchor.AnchorProvider;
   let connection: Connection;
-  let program: anchor.Program<SbarterTokenPrograms>
+  let program: anchor.Program<SbarterTokenPrograms>;
+  let tuktuk: anchor.Program<Tuktuk>;
   let master: Keypair;
   let wallet: anchor.Wallet;
   let mint: PublicKey;
+
+  let tuktukConfig: PublicKey;
+  let taskQueuePda: PublicKey;
+  let taskQueueNameMappingPda: PublicKey;
+  let taskQueueAuthorityPda: PublicKey;
 
   // derived maps
   const categoryPdas: Record<string, PublicKey> = {};
@@ -134,7 +195,15 @@ describe("sbarterTokenPrograms (devnet)", function() {
     });
     anchor.setProvider(provider);
 
+    try {
+      execSync(`anchor idl init --filepath ${__dirname}/../target/idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
+    } catch {
+      console.log("Don't mind these ^");
+      execSync(`anchor idl upgrade --filepath ${__dirname}/../target/idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
+    }
     program = anchor.workspace.sbarterTokenPrograms as anchor.Program<SbarterTokenPrograms>;
+    tuktuk = await init(provider, TUKTUK_PROGRAM_ID);
+
 
     for (const wallet of Object.values(FUNCTIONAL_CATEGORY_AUTHORITIES)) {
       console.log("Requesting airdrop for wallet:", wallet);
@@ -293,13 +362,76 @@ describe("sbarterTokenPrograms (devnet)", function() {
     }
   });
 
-  it("initialize closed category investors", async () => {
-    const accounts = (category: PublicKey, investorPda: PublicKey, investorWallet: PublicKey, investorAta: PublicKey) => ({
+  it("invoke initialize tuktuk", async () => {
+    [tuktukConfig] = tuktukConfigKey(TUKTUK_PROGRAM_ID);
+    if (!(await tuktuk.account.tuktukConfigV0.fetchNullable(tuktukConfig))) {
+      const tuktukConfigTx = await tuktuk.methods
+        .initializeTuktukConfigV0({
+          minDeposit: new anchor.BN(100000000),
+        })
+        .accounts({
+          payer: master.publicKey,
+          authority: master.publicKey,
+        })
+        .signers([master])
+        .transaction();
+      let sig: string;
+      try {
+        sig = await sendAndConfirmTx(tuktukConfigTx, connection, wallet);
+      } catch (e: any) {
+        console.log(await e.getLogs());
+      }
+      console.log("initialize tuktuk config tx:", DEVNET_EXPLORER_TX(sig));
+    }
+
+    const tuktukConfigAcc = await tuktuk.account.tuktukConfigV0.fetch(
+      tuktukConfig, 'confirmed'
+    );
+    [taskQueuePda] = taskQueueKey(tuktukConfig, tuktukConfigAcc.nextTaskQueueId, TUKTUK_PROGRAM_ID);
+    [taskQueueNameMappingPda] = taskQueueNameMappingKey(tuktukConfig, TASK_QUEUE_NAME, TUKTUK_PROGRAM_ID);
+    [taskQueueAuthorityPda] = taskQueueAuthorityKey(taskQueuePda, masterPda, TUKTUK_PROGRAM_ID);
+
+    const accounts: Record<string, PublicKey> = {
       master: master.publicKey,
-      category: category,
+      masterPda: masterPda,
+      masterAta: masterAta,
+      taskQueue: taskQueuePda,
+      taskQueueNameMapping: taskQueueNameMappingPda,
+      taskQueueAuthority: taskQueueAuthorityPda,
+      tuktukConfig: tuktukConfig,
+      tuktukProgram: TUKTUK_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_PID,
+    };
+
+    let sig: string;
+    try {
+      const tx = await program.methods.initializeTuktuk(TASK_QUEUE_NAME).accounts(accounts).signers([master]).transaction();
+      sig = await sendAndConfirmTx(tx, connection, wallet);
+      console.log("initialize tuktuk tx:", DEVNET_EXPLORER_TX(sig));
+    } catch (e: any) {
+      console.log("failed to initialize tuktuk:\n", await e.getLogs());
+    }
+
+    const taskQueue = await tuktuk.account.taskQueueV0.fetch(taskQueuePda);
+    console.log("Tuktuk task queue created:", taskQueue);
+    expect(taskQueue).not.to.be.undefined;
+  });
+
+  it("initialize closed category investors", async () => {
+    const accounts = (categorySeed: string, investorId: number, investorPda: PublicKey, investorWallet: PublicKey, investorAta: PublicKey) => ({
+      master: master.publicKey,
+      category: categoryPdas[categorySeed],
+      categoryAta: categoryAtas[categorySeed],
       investorPda: investorPda,
       investorWallet: investorWallet,
       investorAta: investorAta,
+      nextTask: deriveTaskPubkey(categorySeed, investorId, taskQueuePda, false),
+      nextTaskFlipped: deriveTaskPubkey(categorySeed, investorId, taskQueuePda, true),
+      taskQueue: taskQueuePda,
+      taskQueueNameMapping: taskQueueNameMappingPda,
+      taskQueueAuthority: taskQueueAuthorityPda,
+      tuktukConfig: tuktukConfig,
+      tuktukProgram: TUKTUK_PROGRAM_ID,
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -309,7 +441,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     for (let i = 1; i <= 5; i++) {
       const investorWallet = Keypair.generate();
       const [investorPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("preseed"), Buffer.from(new Uint8Array(new Uint32Array([i]).buffer)), mint.toBuffer()],
+        [Buffer.from("preseed"), Buffer.from(new Uint8Array(new Uint16Array([i]).buffer)), mint.toBuffer()],
         program.programId
       );
       const investorAta = getAssociatedTokenAddressSync(
@@ -323,8 +455,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
       preseedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
       const tx = await program.methods
-        .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000)) // 1M tokens monthly allocation
-        .accounts(accounts(categoryPdas["preseed"], investorPda, investorWallet.publicKey, investorAta))
+        .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000), TASK_QUEUE_NAME) // 1M tokens monthly allocation
+        .accounts(accounts("preseed", i, investorPda, investorWallet.publicKey, investorAta))
         .signers([master])
         .transaction();
 
@@ -340,7 +472,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     for (let i = 1; i <= 2; i++) {
       const investorWallet = Keypair.generate();
       const [investorPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("seed"), Buffer.from(new Uint8Array(new Uint32Array([i]).buffer)), mint.toBuffer()],
+        [Buffer.from("seed"), Buffer.from(new Uint8Array(new Uint16Array([i]).buffer)), mint.toBuffer()],
         program.programId
       );
       const investorAta = getAssociatedTokenAddressSync(
@@ -354,8 +486,8 @@ describe("sbarterTokenPrograms (devnet)", function() {
       seedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
       const tx = await program.methods
-        .addInvestorToCategory("seed", i, new anchor.BN(2000000 * 1000000)) // 2M tokens monthly allocation
-        .accounts(accounts(categoryPdas["seed"], investorPda, investorWallet.publicKey, investorAta))
+        .addInvestorToCategory("seed", i, new anchor.BN(2000000 * 1000000), TASK_QUEUE_NAME) // 2M tokens monthly allocation
+        .accounts(accounts("seed", i, investorPda, investorWallet.publicKey, investorAta))
         .signers([master])
         .transaction();
 

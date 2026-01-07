@@ -5,18 +5,28 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
+[programs.devnet]
+master_token_program = "5LnwuNSM9TKgr69YXoLCdCdoZ7SZ1kvtYAdknPGSJ3KX"
+
 [programs.localnet]
 master_token_program = "47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y"
+tuktuk = "tuktukUrfhXT6ZT77QTU8RQtvgL967uRuVagWF57zVA"
 
-[programs.devnet]
-master_token_program = "47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y"
+[test.validator]
+url = "http://127.0.0.1:8899"
+[[test.validator.clone]]
+address = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+[[test.validator.clone]]
+address = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 
 [registry]
 url = "https://api.apr.dev"
-
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+
+[test]
+startup_wait = 20000

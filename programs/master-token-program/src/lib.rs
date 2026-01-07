@@ -57,7 +57,7 @@ const _: () = {
     )
 };
 
-declare_id!("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
+declare_id!("5LnwuNSM9TKgr69YXoLCdCdoZ7SZ1kvtYAdknPGSJ3KX");
 #[program]
 pub mod sbarter_token_programs {
 
@@ -96,12 +96,14 @@ pub mod sbarter_token_programs {
         ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
         category_seed: String,
         investor_index: u16,
+        flipped: bool,
         task_queue_name: String,
     ) -> Result<()> {
         instructions::autoclaim::tuktuk_claim_tokens(
             ctx,
             category_seed,
             investor_index,
+            flipped,
             task_queue_name,
         )
     }

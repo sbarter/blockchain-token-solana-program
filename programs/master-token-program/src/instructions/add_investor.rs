@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 use tuktuk_program::{TransactionSourceV0, TuktukConfigV0, compile_transaction, tuktuk::{cpi::{accounts::QueueTaskV0, queue_task_v0}, program::Tuktuk}, types::QueueTaskArgsV0};
 
-use crate::{VESTING_MONTH, states::{Investor, InvestorCategoryData}};
+use crate::{VESTING_MONTH, instructions::derive_task_pubkey, states::{Investor, InvestorCategoryData}};
 
 fn schedule_autoclaim<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
@@ -18,17 +18,40 @@ fn schedule_autoclaim<'info>(
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
 
+    let Ok(next_task_flipped) = derive_task_pubkey(&category_seed, investor_index, &ctx.accounts.task_queue.key(), true) else {
+        return Err(crate::error::ErrorCode::TuktukTaskId.into());
+    };
     
     let ix = crate::instruction::InvestorAutoClaim {
         category_seed,
         investor_index,
+        flipped: false,
         task_queue_name
     };
+
+    let accounts = crate::accounts::TuktukAutoClaim {
+        master_pda: ctx.accounts.master_pda.key(),
+        investor_pda: ctx.accounts.investor_pda.key(),
+        investor_ata: ctx.accounts.investor_ata.key(),
+        category: ctx.accounts.category.key(),
+        category_ata: ctx.accounts.category_ata.key(),
+        next_task: ctx.accounts.first_task.key(),
+        next_task_flipped,
+        task_queue: ctx.accounts.task_queue.key(),
+        task_queue_name_mapping: ctx.accounts.task_queue_name_mapping.key(),
+        task_queue_authority: ctx.accounts.task_queue_authority.key(),
+        tuktuk_config: ctx.accounts.tuktuk_config.key(),
+        tuktuk_program: ctx.accounts.tuktuk_program.key(),
+        mint: ctx.accounts.mint.key(),
+        token_program: ctx.accounts.token_program.key(),
+        associated_token_program: ctx.accounts.associated_token_program.key(),
+        system_program: ctx.accounts.system_program.key(),
+    }.to_account_metas(None);
 
     let (compiled_tx, _) = compile_transaction(
         vec![Instruction {
             program_id: crate::ID,
-            accounts: ctx.accounts.to_account_metas(None).to_vec(),
+            accounts,
             data: ix.data(),
         }],
         vec![vec![b"master".to_vec(), vec![ctx.bumps.master_pda]]],
@@ -40,8 +63,8 @@ fn schedule_autoclaim<'info>(
         task_queue_authority: ctx.accounts.task_queue_authority.to_account_info(),
         task_queue: ctx.accounts.task_queue.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
-        payer: ctx.accounts.task_queue.to_account_info(),
-        task: ctx.accounts.next_task.to_account_info(),
+        payer: ctx.accounts.master.to_account_info(),
+        task: ctx.accounts.first_task.to_account_info(),
     };
     let cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.tuktuk_program.to_account_info(),
@@ -77,12 +100,6 @@ pub fn add_investor_to_category<'info>(
         crate::error::ErrorCode::TooManyTokensAllocated
     );
     
-    let (expected_next_task, _) = Pubkey::find_program_address(
-        &[b"task", ctx.accounts.task_queue.key().as_ref(), &new_investor_index.to_le_bytes()],
-        &ctx.accounts.tuktuk_program.key()
-    );
-    require_keys_eq!(ctx.accounts.next_task.key(), expected_next_task);
-
     let (expected_mapping, _) = Pubkey::find_program_address(
         &[
             "task_queue_name_mapping".as_bytes(),
@@ -167,10 +184,18 @@ pub struct AddInvestorToCategory<'info> {
         bump
     )]
     pub category: Account<'info, InvestorCategoryData>,
+    
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = category,
+        associated_token::token_program = token_program
+    )]
+    pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut)]
     /// CHECK: Will be created
-    pub next_task: UncheckedAccount<'info>,
+    pub first_task: UncheckedAccount<'info>,
     #[account(mut)]
     /// CHECK: created by init tuktuk
     pub task_queue: UncheckedAccount<'info>,

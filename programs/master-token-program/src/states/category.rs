@@ -6,6 +6,10 @@ use crate::{
     VGP_MONTHLY_SUPPLY,
 };
 
+/// Used for mapping seed -> category id
+pub const INVESTOR_CATEGORY_SEEDS: [&[u8]; 5] =
+    [b"preseed", b"seed", b"institutional", b"vgp", b"founders"];
+
 #[derive(Debug)]
 #[account]
 pub struct InvestorCategoryData {

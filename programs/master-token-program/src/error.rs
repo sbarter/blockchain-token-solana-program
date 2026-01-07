@@ -10,10 +10,14 @@ pub enum ErrorCode {
     AtaMismatch,
     #[msg("Wrong investor index provided")]
     InvestorIndex,
+    #[msg("Invalid category seed")]
+    CategorySeed,
     #[msg("Unable to allocate or move this amount of tokens")]
     TooManyTokensAllocated,
-    #[msg("Category is closed. No investors can be added.")]
+    #[msg("Category is closed. No investors can be added")]
     CategoryClosed,
-    #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE.")]
+    #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE")]
     UnintializedInvestors,
+    #[msg("Invalid Tuktuk task ID provided")]
+    TuktukTaskId,
 }
