@@ -18,6 +18,9 @@ url = "http://127.0.0.1:8899"
 address = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 [[test.validator.clone]]
 address = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+[[test.validator.account]]
+address = "tuktukUrfhXT6ZT77QTU8RQtvgL967uRuVagWF57zVA"
+filename = "target/deploy/tuktuk.so"
 
 [registry]
 url = "https://api.apr.dev"

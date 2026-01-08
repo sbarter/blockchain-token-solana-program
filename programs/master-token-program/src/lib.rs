@@ -57,7 +57,7 @@ const _: () = {
     )
 };
 
-declare_id!("5LnwuNSM9TKgr69YXoLCdCdoZ7SZ1kvtYAdknPGSJ3KX");
+declare_id!("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
 #[program]
 pub mod sbarter_token_programs {
 

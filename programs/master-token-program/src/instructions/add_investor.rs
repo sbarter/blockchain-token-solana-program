@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 use tuktuk_program::{TransactionSourceV0, TuktukConfigV0, compile_transaction, tuktuk::{cpi::{accounts::QueueTaskV0, queue_task_v0}, program::Tuktuk}, types::QueueTaskArgsV0};
 
-use crate::{VESTING_MONTH, instructions::derive_task_pubkey, states::{Investor, InvestorCategoryData}};
+use crate::{VESTING_MONTH, instructions::{derive_task_id, derive_task}, states::{Investor, InvestorCategoryData}};
 
 fn schedule_autoclaim<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
@@ -18,9 +18,8 @@ fn schedule_autoclaim<'info>(
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
 
-    let Ok(next_task_flipped) = derive_task_pubkey(&category_seed, investor_index, &ctx.accounts.task_queue.key(), true) else {
-        return Err(crate::error::ErrorCode::TuktukTaskId.into());
-    };
+    let (_, next_task_id) = derive_task(&category_seed, investor_index, &ctx.accounts.task_queue.key(), false)?;
+    let (next_task_flipped, _) = derive_task(&category_seed, investor_index, &ctx.accounts.task_queue.key(), true)?;
     
     let ix = crate::instruction::InvestorAutoClaim {
         category_seed,
@@ -72,7 +71,7 @@ fn schedule_autoclaim<'info>(
         signer_seeds,
     );
     let args = QueueTaskArgsV0 {
-        id: investor_index,
+        id: next_task_id,
         trigger: tuktuk_program::TriggerV0::Timestamp(timestamp),
         transaction: TransactionSourceV0::CompiledV0(compiled_tx),
         crank_reward: Some(10000),

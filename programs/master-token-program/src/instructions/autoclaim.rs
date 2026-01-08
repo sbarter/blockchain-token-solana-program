@@ -24,15 +24,28 @@ use crate::{
     SBT_DECIMALS, VESTING_MONTH,
 };
 
-pub fn derive_task_pubkey(
+pub fn derive_task_id(category_id: u16, investor_index: u16, flipped: bool) -> u16 {
+    const U16_MSB: u16 = 0x8000;
+    const CATEGORY_BITMASK: u16 = 0x7000;
+
+    // bit structure: FCCC0000 00000000
+    // F - flipped, so that a task can queue itself while existing
+    // C - 0-7 unique category id, so that task ids between categories don't clash
+    // the rest is investor index
+    let mut task_id = investor_index;
+    if flipped {
+        task_id ^= U16_MSB;
+    }
+    task_id |= (category_id << 12) & CATEGORY_BITMASK;
+    task_id
+}
+
+pub fn derive_task(
     category_seed: &str,
     investor_index: u16,
     task_queue: &Pubkey,
     flipped: bool,
-) -> Result<Pubkey> {
-    const U16_MSB: u16 = 0x8000;
-    const CATEGORY_BITMASK: u16 = 0x7000;
-
+) -> Result<(Pubkey, u16)> {
     let Some(category_id) = INVESTOR_CATEGORY_SEEDS
         .iter()
         .position(|&seed| seed == category_seed.as_bytes())
@@ -40,23 +53,15 @@ pub fn derive_task_pubkey(
         return Err(crate::error::ErrorCode::CategorySeed.into());
     };
 
-    // bit structure: FCCC0000 00000000
-    // F - flipped, so that a task can queue itself while existing
-    // C - 0-7 unique category id, so that task ids between categories don't clash
-    // the rest is investor index
-    let task_id = {
-        let mut task_id = investor_index;
-        if flipped {
-            task_id ^= U16_MSB;
-        }
-        task_id |= ((category_id as u16) << 12) & CATEGORY_BITMASK;
-        task_id
-    };
-    Ok(Pubkey::find_program_address(
-        &[b"task", task_queue.as_ref(), &task_id.to_le_bytes()],
-        &tuktuk::ID,
-    )
-    .0)
+    let task_id = derive_task_id(category_id as u16, investor_index, flipped);
+    Ok((
+        Pubkey::find_program_address(
+            &[b"task", task_queue.as_ref(), &task_id.to_le_bytes()],
+            &tuktuk::ID,
+        )
+        .0,
+        task_id,
+    ))
 }
 
 fn schedule_autoclaim<'info>(
@@ -137,7 +142,7 @@ pub fn tuktuk_claim_tokens<'info>(
     );
     require_keys_eq!(ctx.accounts.task_queue_name_mapping.key(), expected_mapping);
 
-    let Ok(expected_next_task) = derive_task_pubkey(
+    let Ok((expected_next_task, _)) = derive_task(
         &category_seed,
         investor_index,
         &ctx.accounts.task_queue.key(),
@@ -151,7 +156,7 @@ pub fn tuktuk_claim_tokens<'info>(
         crate::error::ErrorCode::TuktukTaskId
     );
 
-    let Ok(expected_next_task_flipped) = derive_task_pubkey(
+    let Ok((expected_next_task_flipped, _)) = derive_task(
         &category_seed,
         investor_index,
         &ctx.accounts.task_queue.key(),

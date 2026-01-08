@@ -196,10 +196,10 @@ describe("sbarterTokenPrograms (devnet)", function() {
     anchor.setProvider(provider);
 
     try {
-      execSync(`anchor idl init --filepath ${__dirname}/../target/idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
+      execSync(`anchor idl init --filepath ${__dirname}/../idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
     } catch {
       console.log("Don't mind these ^");
-      execSync(`anchor idl upgrade --filepath ${__dirname}/../target/idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
+      execSync(`anchor idl upgrade --filepath ${__dirname}/../idl/tuktuk.json ${TUKTUK_PROGRAM_ID} --provider.cluster ${connection.rpcEndpoint}`, { stdio: "inherit", shell: "/bin/bash" })
     }
     program = anchor.workspace.sbarterTokenPrograms as anchor.Program<SbarterTokenPrograms>;
     tuktuk = await init(provider, TUKTUK_PROGRAM_ID);
@@ -425,8 +425,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       investorPda: investorPda,
       investorWallet: investorWallet,
       investorAta: investorAta,
-      nextTask: deriveTaskPubkey(categorySeed, investorId, taskQueuePda, false),
-      nextTaskFlipped: deriveTaskPubkey(categorySeed, investorId, taskQueuePda, true),
+      firstTask: deriveTaskPubkey(categorySeed, investorId, taskQueuePda, false),
       taskQueue: taskQueuePda,
       taskQueueNameMapping: taskQueueNameMappingPda,
       taskQueueAuthority: taskQueueAuthorityPda,
@@ -454,11 +453,16 @@ describe("sbarterTokenPrograms (devnet)", function() {
 
       preseedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
-      const tx = await program.methods
-        .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000), TASK_QUEUE_NAME) // 1M tokens monthly allocation
-        .accounts(accounts("preseed", i, investorPda, investorWallet.publicKey, investorAta))
-        .signers([master])
-        .transaction();
+      let tx: Transaction;
+      try {
+        tx = await program.methods
+          .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000), TASK_QUEUE_NAME) // 1M tokens monthly allocation
+          .accounts(accounts("preseed", i, investorPda, investorWallet.publicKey, investorAta))
+          .signers([master])
+          .transaction();
+      } catch (e: any) {
+        console.log(e);
+      }
 
       let sig: string;
       try {
