@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 pub struct Investor {
     pub wallet: Pubkey,
     pub monthly_allocation: u64,
+    /// An investor has to wait an extra month if joined during vesting.
     pub first_month_skipped: bool,
 
     pub months_claimed: u8,

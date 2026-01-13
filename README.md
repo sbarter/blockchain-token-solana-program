@@ -8,7 +8,7 @@ and investors according to the cliff & vesting schedule.
 1. Build the program:
 
 ```bash
-anchor build
+env TESTING=1 anchor build
 ```
 
 2. Run solana-test-validator:
@@ -24,7 +24,7 @@ solana-test-validator -r \
 3. Run tests:
 
 ```bash
-anchor test --skip-local-validator --skip-deploy
+env TESTING=1 anchor test --skip-local-validator --skip-deploy
 ```
 
 (`anchor test` normally loads programs automagically, but it never ever works

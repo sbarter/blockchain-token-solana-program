@@ -6,10 +6,6 @@ use crate::{
     VGP_MONTHLY_SUPPLY,
 };
 
-/// Used for mapping seed -> category id
-pub const INVESTOR_CATEGORY_SEEDS: [&[u8]; 5] =
-    [b"preseed", b"seed", b"institutional", b"vgp", b"founders"];
-
 #[derive(Debug)]
 #[account]
 pub struct InvestorCategoryData {
@@ -48,8 +44,14 @@ impl FunctionalCategoryData {
 pub struct Category<T> {
     pub seed: &'static [u8],
     pub data: T,
+    /// Closed categories have known amount of investors
+    /// that a category must have initialized before TGE.
     pub pre_investors: u16,
 }
+
+// TODO: Use actual number of pre-investors for PRE_SEED and SEED,
+// we expect to know it before TGE.
+// However, we do not validate for concrete investor wallet pubkeys.
 
 pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"preseed",
@@ -130,6 +132,8 @@ pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
     },
     pre_investors: 0,
 };
+
+// TODO: Use actual manager wallets for functional categories.
 
 pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"marketing",

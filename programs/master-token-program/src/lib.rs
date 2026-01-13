@@ -7,6 +7,8 @@ pub mod error;
 pub mod instructions;
 pub mod states;
 
+pub const TESTING: bool = std::option_env!("TESTING").is_some();
+
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
 pub const SBT_DECIMALS: u32 = 6;
@@ -14,11 +16,13 @@ pub const fn tokens(sbt: u64) -> u64 {
     sbt * 10u64.pow(SBT_DECIMALS)
 }
 
-// pub const VESTING_MONTH: u64 = 30 * 24 * 60 * 60;
-// pub const CLAIM_RETRY_PERIOD: u64 = 24 * 60 * 60;
-
-pub const VESTING_MONTH: u64 = 10;
-pub const CLAIM_RETRY_PERIOD: u64 = 5;
+pub const VESTING_MONTH: u64 = {
+    if !TESTING {
+        30 * 24 * 60 * 60
+    } else {
+        10
+    }
+};
 
 pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 

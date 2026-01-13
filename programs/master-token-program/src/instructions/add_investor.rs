@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::{  states::{Investor, InvestorCategoryData}};
+use crate::{states::{Investor, InvestorCategoryData}};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,

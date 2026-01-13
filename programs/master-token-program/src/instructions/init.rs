@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::states::category::*;
+use crate::{states::category::*, MASTER_WALLET, TESTING};
 
 fn create_master_ata<'info>(ctx: &Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
     let expected_master_ata = get_associated_token_address_with_program_id(
@@ -232,7 +232,11 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer,
+        constraint = TESTING || master.key() == MASTER_WALLET
+    )]
     pub master: Signer<'info>,
 
     #[account(
