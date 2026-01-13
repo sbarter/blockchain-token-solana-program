@@ -15,7 +15,10 @@ pub const fn tokens(sbt: u64) -> u64 {
 }
 
 // pub const VESTING_MONTH: u64 = 30 * 24 * 60 * 60;
+// pub const CLAIM_RETRY_PERIOD: u64 = 24 * 60 * 60;
+
 pub const VESTING_MONTH: u64 = 10;
+pub const CLAIM_RETRY_PERIOD: u64 = 5;
 
 pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 
@@ -67,13 +70,6 @@ pub mod sbarter_token_programs {
         instructions::init::initialize(ctx)
     }
 
-    pub fn initialize_tuktuk<'info>(
-        ctx: Context<'_, '_, '_, 'info, InitializeTuktuk<'info>>,
-        task_queue_name: String,
-    ) -> Result<()> {
-        instructions::init_tuktuk::initialize_tuktuk(ctx, task_queue_name)
-    }
-
     pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
         instructions::tge::start_tge(ctx)
     }
@@ -92,35 +88,17 @@ pub mod sbarter_token_programs {
         instructions::claim::investor_claim_tokens(ctx, category_seed, investor_index)
     }
 
-    pub fn investor_auto_claim<'info>(
-        ctx: Context<'_, '_, '_, 'info, TuktukAutoClaim<'info>>,
-        category_seed: String,
-        investor_index: u16,
-        flipped: bool,
-        task_queue_name: String,
-    ) -> Result<()> {
-        instructions::autoclaim::tuktuk_claim_tokens(
-            ctx,
-            category_seed,
-            investor_index,
-            flipped,
-            task_queue_name,
-        )
-    }
-
     pub fn add_investor_to_category<'info>(
         ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
         new_investor_index: u16,
         monthly_allocation: u64,
-        task_queue_name: String,
     ) -> Result<()> {
         instructions::add_investor::add_investor_to_category(
             ctx,
             category_seed,
             new_investor_index,
             monthly_allocation,
-            task_queue_name,
         )
     }
 

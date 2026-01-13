@@ -25,9 +25,6 @@ pub fn investor_claim_tokens<'info>(
     ];
     let signer_seeds = &[&master_seeds[..]];
 
-    let cliff_pre = category.cliff_months_remaining;
-    let vesting_pre = category.vesting_months_remaining;
-
     let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
@@ -63,6 +60,10 @@ pub fn investor_claim_tokens<'info>(
         }
     }
     if total_tokens > 0 {
+        if ctx.accounts.category_ata.amount < total_tokens {
+            msg!("No available tokens in the category at the moment. You can always try again.");
+            return Ok(());
+        }
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.category_ata.to_account_info(),
             to: ctx.accounts.investor_ata.to_account_info(),
@@ -74,13 +75,7 @@ pub fn investor_claim_tokens<'info>(
             cpi_accounts,
             signer_seeds,
         );
-        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
-        if transfer.is_err() {
-            msg!("Unable to transfer tokens from the category. You can always try again.");
-            investor.cliff_months_remaining = cliff_pre;
-            investor.vesting_months_remaining = vesting_pre;
-            transfer?;
-        }
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
     }
     investor.months_claimed += total_months;
 

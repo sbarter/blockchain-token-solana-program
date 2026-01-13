@@ -18,6 +18,4 @@ pub enum ErrorCode {
     CategoryClosed,
     #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE")]
     UnintializedInvestors,
-    #[msg("Invalid Tuktuk task ID provided")]
-    TuktukTaskId,
 }

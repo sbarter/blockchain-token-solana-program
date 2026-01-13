@@ -1,92 +1,17 @@
-use anchor_lang::{InstructionData, prelude::*, solana_program::{hash::hash, instruction::Instruction}};
+use anchor_lang::{prelude::*};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_2022::Token2022,
     token_interface::{Mint, TokenAccount},
 };
-use tuktuk_program::{TransactionSourceV0, TuktukConfigV0, compile_transaction, tuktuk::{cpi::{accounts::QueueTaskV0, queue_task_v0}, program::Tuktuk}, types::QueueTaskArgsV0};
 
-use crate::{VESTING_MONTH, instructions::{derive_task_id, derive_task}, states::{Investor, InvestorCategoryData}};
-
-fn schedule_autoclaim<'info>(
-    ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
-    timestamp: i64,
-    category_seed: String,
-    investor_index: u16,
-    task_queue_name: String
-) -> Result<()> {
-    let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
-    let signer_seeds = &[&master_seeds[..]];
-
-    let (_, next_task_id) = derive_task(&category_seed, investor_index, &ctx.accounts.task_queue.key(), false)?;
-    let (next_task_flipped, _) = derive_task(&category_seed, investor_index, &ctx.accounts.task_queue.key(), true)?;
-    
-    let ix = crate::instruction::InvestorAutoClaim {
-        category_seed,
-        investor_index,
-        flipped: false,
-        task_queue_name
-    };
-
-    let accounts = crate::accounts::TuktukAutoClaim {
-        master_pda: ctx.accounts.master_pda.key(),
-        investor_pda: ctx.accounts.investor_pda.key(),
-        investor_ata: ctx.accounts.investor_ata.key(),
-        category: ctx.accounts.category.key(),
-        category_ata: ctx.accounts.category_ata.key(),
-        next_task: ctx.accounts.first_task.key(),
-        next_task_flipped,
-        task_queue: ctx.accounts.task_queue.key(),
-        task_queue_name_mapping: ctx.accounts.task_queue_name_mapping.key(),
-        task_queue_authority: ctx.accounts.task_queue_authority.key(),
-        tuktuk_config: ctx.accounts.tuktuk_config.key(),
-        tuktuk_program: ctx.accounts.tuktuk_program.key(),
-        mint: ctx.accounts.mint.key(),
-        token_program: ctx.accounts.token_program.key(),
-        associated_token_program: ctx.accounts.associated_token_program.key(),
-        system_program: ctx.accounts.system_program.key(),
-    }.to_account_metas(None);
-
-    let (compiled_tx, _) = compile_transaction(
-        vec![Instruction {
-            program_id: crate::ID,
-            accounts,
-            data: ix.data(),
-        }],
-        vec![vec![b"master".to_vec(), vec![ctx.bumps.master_pda]]],
-    )
-    .unwrap();
-
-    let cpi_accounts = QueueTaskV0 {
-        queue_authority: ctx.accounts.master_pda.to_account_info(),
-        task_queue_authority: ctx.accounts.task_queue_authority.to_account_info(),
-        task_queue: ctx.accounts.task_queue.to_account_info(),
-        system_program: ctx.accounts.system_program.to_account_info(),
-        payer: ctx.accounts.master.to_account_info(),
-        task: ctx.accounts.first_task.to_account_info(),
-    };
-    let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.tuktuk_program.to_account_info(),
-        cpi_accounts,
-        signer_seeds,
-    );
-    let args = QueueTaskArgsV0 {
-        id: next_task_id,
-        trigger: tuktuk_program::TriggerV0::Timestamp(timestamp),
-        transaction: TransactionSourceV0::CompiledV0(compiled_tx),
-        crank_reward: Some(10000),
-        free_tasks: 1,
-        description: String::new(),
-    };
-    queue_task_v0(cpi_ctx, args)
-}
+use crate::{  states::{Investor, InvestorCategoryData}};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
-    category_seed: String,
+    _category_seed: String,
     new_investor_index: u16,
     monthly_allocation: u64,
-    task_queue_name: String,
 ) -> Result<()> {
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
@@ -99,16 +24,6 @@ pub fn add_investor_to_category<'info>(
         crate::error::ErrorCode::TooManyTokensAllocated
     );
     
-    let (expected_mapping, _) = Pubkey::find_program_address(
-        &[
-            "task_queue_name_mapping".as_bytes(),
-            ctx.accounts.tuktuk_config.key().as_ref(),
-            &hash(task_queue_name.as_bytes()).to_bytes()
-        ],
-        &ctx.accounts.tuktuk_program.key()
-    );
-    require_keys_eq!(ctx.accounts.task_queue_name_mapping.key(), expected_mapping);
-    
     investor.wallet = ctx.accounts.investor_wallet.key();
     // has to wait an extra month if joined during vesting
     investor.first_month_skipped = category.cliff_months_remaining > 0;
@@ -120,30 +35,11 @@ pub fn add_investor_to_category<'info>(
     category.investor_count += 1;
     category.unallocated_total_tokens -= monthly_allocation * category.vesting_months_remaining as u64;
 
-    let cliff_started_at = category.cliff_started_at;
-    let next_cycle = {
-        let now = Clock::get()?.unix_timestamp;
-        let since_tge = now.saturating_sub(category.cliff_started_at as i64);
-        let months_elapsed = (since_tge / VESTING_MONTH as i64) as u8;
-        cliff_started_at as i64 + (VESTING_MONTH as i64 * (months_elapsed + 1) as i64)
-    };
-    
-    if let Err(e) = schedule_autoclaim(
-        ctx,
-        next_cycle,
-        category_seed,
-        new_investor_index,
-        task_queue_name
-    ) {
-        msg!("Failed to schedule autoclaim for investor!");
-        msg!(&format!("{e}"));
-    }
-    
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, new_investor_index: u16, monthly_allocation: u64, task_queue_name: String)]
+#[instruction(category_seed: String, new_investor_index: u16, monthly_allocation: u64)]
 pub struct AddInvestorToCategory<'info> {
     #[account(mut, signer, address = crate::MASTER_WALLET)]
     pub master: Signer<'info>,
@@ -191,35 +87,6 @@ pub struct AddInvestorToCategory<'info> {
         associated_token::token_program = token_program
     )]
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(mut)]
-    /// CHECK: Will be created
-    pub first_task: UncheckedAccount<'info>,
-    #[account(mut)]
-    /// CHECK: created by init tuktuk
-    pub task_queue: UncheckedAccount<'info>,
-    #[account()]
-    /// CHECK: created by init tuktuk
-    pub task_queue_name_mapping: AccountInfo<'info>,
-    #[account(
-        mut,
-        seeds = [
-            b"task_queue_authority",
-            task_queue.key().as_ref(),
-            master_pda.key().as_ref()
-        ],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
-    /// CHECK: created by init tuktuk
-    pub task_queue_authority: AccountInfo<'info>,
-    #[account(
-        seeds = [b"tuktuk_config"],
-        bump,
-        seeds::program = tuktuk_program.key()
-    )]
-    pub tuktuk_config: Account<'info, TuktukConfigV0>,
-    pub tuktuk_program: Program<'info, Tuktuk>,
 
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,
