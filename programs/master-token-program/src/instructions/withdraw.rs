@@ -18,6 +18,14 @@ pub fn withdraw_category_tokens<'info>(
         amount,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
+    require_gte!(
+        ctx.accounts
+            .category_ata
+            .amount
+            .saturating_sub(category.allocated_unclaimed_tokens),
+        amount,
+        crate::error::ErrorCode::TokensUnavailable
+    );
     require_neq!(
         category.cliff_started_at,
         0,

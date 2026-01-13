@@ -34,6 +34,7 @@ pub fn add_investor_to_category<'info>(
 
     category.investor_count += 1;
     category.unallocated_total_tokens -= monthly_allocation * category.vesting_months_remaining as u64;
+    category.allocated_unclaimed_tokens += monthly_allocation * category.vesting_months_remaining as u64;
 
     Ok(())
 }

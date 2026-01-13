@@ -12,8 +12,10 @@ pub enum ErrorCode {
     InvestorIndex,
     #[msg("Invalid category seed")]
     CategorySeed,
-    #[msg("Unable to allocate or move this amount of tokens")]
+    #[msg("Unable to allocate or move this amount of tokens because of overallocation")]
     TooManyTokensAllocated,
+    #[msg("Unable to move this amount of tokens because they are currently unavailable in the category")]
+    TokensUnavailable,
     #[msg("Category is closed. No investors can be added")]
     CategoryClosed,
     #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE")]

@@ -78,6 +78,7 @@ pub fn investor_claim_tokens<'info>(
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
     }
     investor.months_claimed += total_months;
+    ctx.accounts.category.allocated_unclaimed_tokens -= total_tokens;
 
     Ok(())
 }

@@ -47,6 +47,7 @@ fn initialize_investor_category<'info>(
 ) -> Result<()> {
     category.monthly_allocation = data.monthly_allocation;
     category.unallocated_total_tokens = data.unallocated_total_tokens;
+    category.allocated_unclaimed_tokens = data.allocated_unclaimed_tokens;
     category.cliff_months_remaining = data.cliff_months_remaining;
     category.vesting_months_remaining = data.vesting_months_remaining;
     category.investor_count = data.investor_count;

@@ -15,6 +15,7 @@ pub const INVESTOR_CATEGORY_SEEDS: [&[u8]; 5] =
 pub struct InvestorCategoryData {
     pub monthly_allocation: u64,
     pub unallocated_total_tokens: u64,
+    pub allocated_unclaimed_tokens: u64,
 
     pub cliff_started_at: u64,
     pub months_claimed: u8,
@@ -25,7 +26,7 @@ pub struct InvestorCategoryData {
 }
 
 impl InvestorCategoryData {
-    pub const LEN: usize = 8 + 8 + 8 + 8 + 1 + 1 + 1 + 4 + 1;
+    pub const LEN: usize = 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 4 + 1;
 }
 
 #[derive(Debug)]
@@ -55,6 +56,7 @@ pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     data: InvestorCategoryData {
         monthly_allocation: PRESEED_MONTHLY_SUPPLY,
         unallocated_total_tokens: PRESEED_MONTHLY_SUPPLY * 24,
+        allocated_unclaimed_tokens: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -70,6 +72,7 @@ pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     data: InvestorCategoryData {
         monthly_allocation: SEED_MONTHLY_SUPPLY,
         unallocated_total_tokens: SEED_MONTHLY_SUPPLY * 18,
+        allocated_unclaimed_tokens: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 6,
@@ -85,6 +88,7 @@ pub const INSTITUTIONAL_CATEGORY: Category<InvestorCategoryData> = Category {
     data: InvestorCategoryData {
         monthly_allocation: INSTITUTIONAL_MONTHLY_SUPPLY,
         unallocated_total_tokens: INSTITUTIONAL_MONTHLY_SUPPLY * 24,
+        allocated_unclaimed_tokens: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -100,6 +104,7 @@ pub const VGP_CATEGORY: Category<InvestorCategoryData> = Category {
     data: InvestorCategoryData {
         monthly_allocation: VGP_MONTHLY_SUPPLY,
         unallocated_total_tokens: VGP_MONTHLY_SUPPLY * 24,
+        allocated_unclaimed_tokens: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -115,6 +120,7 @@ pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
     data: InvestorCategoryData {
         monthly_allocation: FOUNDERS_MONTHLY_SUPPLY,
         unallocated_total_tokens: FOUNDERS_MONTHLY_SUPPLY * 24,
+        allocated_unclaimed_tokens: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
