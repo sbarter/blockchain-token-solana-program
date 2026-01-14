@@ -1,0 +1,12 @@
+[package]
+name = "backend"
+edition.workspace = true
+authors.workspace = true
+version.workspace = true
+
+[dependencies]
+tokio = { version = "1.49.0", features = ["rt"] }
+anyhow = "1.0.100"
+anchor-client = "0.31.1"
+
+master-token-program = { path = "../../programs/master-token-program/" }

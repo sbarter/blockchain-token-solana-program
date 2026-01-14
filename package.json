@@ -6,8 +6,6 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
-    "@helium/tuktuk-idls": "^0.0.10",
-    "@helium/tuktuk-sdk": "^0.0.10",
     "@solana-developers/helpers": "^2.8.1",
     "@solana/spl-token": "^0.4.14",
     "axios": "^1.13.2"

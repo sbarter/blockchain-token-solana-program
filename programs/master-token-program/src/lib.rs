@@ -9,6 +9,7 @@ pub mod states;
 
 pub const TESTING: bool = std::option_env!("TESTING").is_some();
 
+/// Master multisig wallet that authorizes the operations (unless TESTING).
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
 pub const SBT_DECIMALS: u32 = 6;
@@ -40,6 +41,7 @@ pub const FOUNDERS_MONTHLY_SUPPLY: u64 = tokens(4_200_000_000) / 24;
 pub const RESERVE_MONTHLY_SUPPLY: u64 = (tokens(2_925_000_000) - RESERVE_LIQUID_SUPPLY) / 48;
 pub const LIQUIDITY_MONTHLY_SUPPLY: u64 = (tokens(1_875_000_000) - LIQUIDITY_LIQUID_SUPPLY) / 12;
 
+/// Consteval assurance that all tokens eventually get distributed to categories.
 const _: () = {
     const TOTAL_DISTRIBUTED: u64 = PRESEED_MONTHLY_SUPPLY * 24
         + SEED_MONTHLY_SUPPLY * 18

@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/*"]
+members = ["app/backend","programs/*"]
 package.edition = "2021"
 package.authors = ["Brightnode"]
 package.version = "0.1.0"
