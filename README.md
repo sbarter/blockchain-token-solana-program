@@ -3,6 +3,14 @@
 The Solana program responsible for TGE and distribution of SBT tokens to categories
 and investors according to the cliff & vesting schedule.
 
+Category PDAs are created on initialization, then investors are added
+one-by-one, and the TGE instruction is triggered. All of the above are signed
+by the Sbarter Multisig Wallet.
+
+The program also exposes two permissionless instructions:
+`transfer_category_vestings` and `investor_claim_tokens`, that can be run
+manually by anybody incentivized or by the first-party Automation Cronjob.
+
 ## How to test
 
 1. Build the program:
@@ -38,7 +46,7 @@ for me.)
 sequenceDiagram
     title TGE – Setup, Minting & TGE Release (per allocation config)
 
-    participant Admin as Master / Sbarter Association
+    participant Admin as Master / Sbarter Association Multisig
     participant Program as TGE Program
     participant MasterPda as Master PDA Vault
     participant Mint as SBT Token Mint
@@ -46,12 +54,12 @@ sequenceDiagram
     participant Investor as Individual Investors
 
     %% 1. Pre-TGE: configure sale and allocations
-    Admin->>Program: initialize(mint, categoryAddresses[PreSeed..Liquidity], vault)
+    Admin->>Program: initialize(mint, category_addresses[pre_seed..liquidity], vault)
     Program->>MasterPda: create_master_vault()
 
     %% 2. Pre-TGE: create vesting PDAs & escrow full allocations
     loop For each allocation category
-        Program->>Category: initialize_category(cliff, vesting, monthlyAllocation,...)
+        Program->>Category: initialize_category(cliff, vesting, monthly_allocation,...)
         Category-->>Program: initialized
     end
     Program-->>Admin: initialized
@@ -64,13 +72,13 @@ sequenceDiagram
 
     %% 3. At TGE moment
     Admin->>Program: trigger_TGE()
-    Program-->>Program: check_all_investors_initialized(preSeed, Seed)
+    Program-->>Program: check_all_investors_initialized(pre_seed, seed)
     Program->>Mint: mint_to_vault(25B)
     Mint-->>MasterPda: minted
     Program->>Mint: set_authority(None)
-    Program->>Category: Marketing: transfer(initialSupply)
-    Program->>Category: Reserve: transfer(initialSupply)
-    Program->>Category: Liquidity: transfer(initialSupply)
+    Program->>Category: Marketing: transfer(initial_supply)
+    Program->>Category: Reserve: transfer(initial_supply)
+    Program->>Category: Liquidity: transfer(initial_supply)
 
     Program-->>Admin: TGE successful
 ```
@@ -124,7 +132,7 @@ sequenceDiagram
 sequenceDiagram
     title Manual token management
 
-    participant Admin as Master / Sbarter Association
+    participant Admin as Master / Sbarter Association Multisig
     participant Manager as Manager Wallet
     participant Program as TGE Program
     participant Category1 as Category 1 PDA
