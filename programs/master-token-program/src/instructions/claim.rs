@@ -32,20 +32,22 @@ pub fn investor_claim_tokens<'info>(
     );
 
     let since_tge = now.saturating_sub(category.cliff_started_at);
-    let months_elapsed = (since_tge / VESTING_MONTH) as u8;
-    let total_months = months_elapsed.saturating_sub(investor.months_claimed);
+    let months_elapsed = since_tge / VESTING_MONTH;
+    let total_months = months_elapsed
+        .saturating_sub(category.months_claimed as u64)
+        .min(48) as u8;
 
     if total_months == 0 {
         msg!("No claim available.");
+        msg!("Months since TGE:");
+        msg!(&months_elapsed.to_string());
+        msg!("Claiming for months:");
+        msg!(&total_months.to_string());
         return Ok(());
     }
 
     let mut total_tokens = 0;
     for _ in 0..total_months {
-        if !investor.first_month_skipped {
-            investor.first_month_skipped = true;
-            continue;
-        }
         if investor.vesting_months_remaining == 0 {
             break;
         }

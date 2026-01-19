@@ -5,8 +5,6 @@ use anchor_lang::prelude::*;
 pub struct Investor {
     pub wallet: Pubkey,
     pub monthly_allocation: u64,
-    /// An investor has to wait an extra month if joined during vesting.
-    pub first_month_skipped: bool,
 
     pub months_claimed: u8,
     pub cliff_months_remaining: u8,
@@ -14,5 +12,5 @@ pub struct Investor {
 }
 
 impl Investor {
-    pub const LEN: usize = 8 + 32 + 8 + 1 + 1 + 1 + 1;
+    pub const LEN: usize = 8 + 32 + 8 + 1 + 1 + 1;
 }

@@ -24,15 +24,13 @@ import {
 import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
 import { getLogs } from "@solana-developers/helpers";
 
-const PROGRAM_ID = new PublicKey("47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y");
-const SYSTEM_PROGRAM_PID = SystemProgram.programId;
+const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
 const DEVNET_EXPLORER_TX = (sig: string) =>
   `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 const DEVNET_EXPLORER_ADDR = (addr: PublicKey) =>
   `https://explorer.solana.com/address/${addr.toBase58()}?cluster=devnet`;
 
-// categories we will use
 const INVESTOR_CATEGORY_NAMES = [
   "preseed",
   "seed",
@@ -104,16 +102,16 @@ describe("sbarterTokenPrograms (devnet)", function() {
     anchor.setProvider(provider);
     program = anchor.workspace.sbarterTokenPrograms as anchor.Program<SbarterTokenPrograms>;
 
-    for (const wallet of Object.values(FUNCTIONAL_CATEGORY_AUTHORITIES)) {
-      console.log("Requesting airdrop for wallet:", wallet);
-      await connection.confirmTransaction(
-        await connection.requestAirdrop(wallet, 1 * LAMPORTS_PER_SOL)
-      );
-      const info = await connection.getAccountInfo(wallet);
-      console.log(info);
-    }
+    // for (const wallet of Object.values(FUNCTIONAL_CATEGORY_AUTHORITIES)) {
+    //   console.log("Requesting airdrop for wallet:", wallet);
+    //   await connection.confirmTransaction(
+    //     await connection.requestAirdrop(wallet, 0.25 * LAMPORTS_PER_SOL)
+    //   );
+    //   const info = await connection.getAccountInfo(wallet);
+    //   console.log(info);
+    // }
 
-    [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master")], PROGRAM_ID);
+    [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master")], program.programId);
 
     const decimals = 6;
     mint = await createMint(
@@ -146,7 +144,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     for (const cat of INVESTOR_CATEGORY_NAMES) {
       const [pda] = PublicKey.findProgramAddressSync(
         [Buffer.from(cat), mint.toBuffer()],
-        PROGRAM_ID
+        program.programId,
       );
       categoryPdas[cat] = pda;
 
@@ -163,7 +161,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     for (const cat of FUNCTIONAL_CATEGORY_NAMES) {
       const [pda] = PublicKey.findProgramAddressSync(
         [Buffer.from(cat), mint.toBuffer()],
-        PROGRAM_ID
+        program.programId
       );
       categoryPdas[cat] = pda;
 
@@ -219,7 +217,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_PID,
+      systemProgram: SYSTEM_PROGRAM_ID,
     };
 
     const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
@@ -250,6 +248,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
   it("initialize closed category investors", async () => {
     const accounts = (categorySeed: string, investorPda: PublicKey, investorWallet: PublicKey, investorAta: PublicKey) => ({
       master: master.publicKey,
+      masterPda,
       category: categoryPdas[categorySeed],
       categoryAta: categoryAtas[categorySeed],
       investorPda: investorPda,
@@ -258,7 +257,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_PID
+      systemProgram: SYSTEM_PROGRAM_ID
     });
 
     const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
@@ -358,7 +357,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_PID,
+      systemProgram: SYSTEM_PROGRAM_ID,
     };
 
     try {
@@ -455,11 +454,12 @@ describe("sbarterTokenPrograms (devnet)", function() {
           mint,
           tokenProgram: TOKEN_2022_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SYSTEM_PROGRAM_PID,
+          systemProgram: SYSTEM_PROGRAM_ID,
         };
         console.log("\n");
 
         const tx = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).transaction();
+        // const sig = "";
         const sig = await sendAndConfirmTx(tx, connection, wallet);
         console.log(`transferCategoryVestings #${i} tx:`, DEVNET_EXPLORER_TX(sig));
         console.log(await getBalances());
@@ -490,6 +490,55 @@ describe("sbarterTokenPrograms (devnet)", function() {
     assert.ok(true);
   });
 
+  it("add a vgp investor mid-vesting", async () => {
+    const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
+    const investorWallet = Keypair.generate();
+    const [investorPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vgp"), Buffer.from(new Uint8Array(new Uint16Array([1]).buffer)), mint.toBuffer()],
+      program.programId
+    );
+    const investorAta = getAssociatedTokenAddressSync(
+      mint,
+      investorWallet.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+    let tx: Transaction;
+    try {
+      tx = await program.methods
+        .addInvestorToCategory("vgp", 1, new anchor.BN(1000000 * 1000000))
+        .accountsStrict({
+          master: master.publicKey,
+          masterPda,
+          category: categoryPdas["vgp"],
+          categoryAta: categoryAtas["vgp"],
+          investorPda,
+          investorWallet: investorWallet.publicKey,
+          investorAta,
+          mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_ID,
+        })
+        .preInstructions([computeIx])
+        .signers([master])
+        .transaction();
+    } catch (e: any) {
+      console.log(e);
+    }
+    let sig: string;
+    try {
+      sig = await sendAndConfirmTx(tx, connection, wallet);
+    } catch (e: any) {
+      console.log(await e.getLogs());
+    }
+    console.log(`Added vgp investor 1: ${DEVNET_EXPLORER_TX(sig)}`);
+
+    const investorData = await program.account.investor.fetch(investorPda);
+    assert(investorData.cliffMonthsRemaining == 1, "investor added during TGE should have an extra cliff month");
+  });
+
   it("claim funds for preseed investors manually", async () => {
     const accounts = (categorySeed: string, investorPda: PublicKey, investorAta: PublicKey) => ({
       category: categoryPdas[categorySeed],
@@ -499,7 +548,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       mint,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_PID
+      systemProgram: SYSTEM_PROGRAM_ID
     });
 
     for (let i = 1; i <= 5; i++) {

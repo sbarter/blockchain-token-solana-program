@@ -6,7 +6,9 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
+#[allow(clippy::too_many_arguments)]
 fn update_vesting_for_investor_category<'info>(
+    now: u64,
     category: &mut Account<'info, InvestorCategoryData>,
     category_ata: AccountInfo<'info>,
     master_pda: &AccountInfo<'info>,
@@ -21,24 +23,27 @@ fn update_vesting_for_investor_category<'info>(
             &category.to_account_info().key(),
             &mint.key(),
             &token_2022::ID,
-        )
+        ),
+        crate::error::ErrorCode::AtaMismatch,
     );
 
-    let cliff_pre = category.cliff_months_remaining;
-    let vesting_pre = category.vesting_months_remaining;
-
-    let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
         crate::error::ErrorCode::TgeNotHappened
     );
 
     let since_tge = now.saturating_sub(category.cliff_started_at);
-    let months_elapsed = (since_tge / VESTING_MONTH) as u8;
-    let total_months = months_elapsed.saturating_sub(category.months_claimed);
+    let months_elapsed = since_tge / VESTING_MONTH;
+    let total_months = months_elapsed
+        .saturating_sub(category.months_claimed as u64)
+        .min(48) as u8;
 
     if total_months == 0 {
         msg!("No claim available.");
+        msg!("Months since TGE:");
+        msg!(&months_elapsed.to_string());
+        msg!("Claiming for months:");
+        msg!(&total_months.to_string());
         return Ok(());
     }
 
@@ -66,20 +71,16 @@ fn update_vesting_for_investor_category<'info>(
         };
         let cpi_ctx =
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
-        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
-        if transfer.is_err() {
-            msg!("Unable to transfer tokens from to category. This really shouldn't happen.");
-            category.cliff_months_remaining = cliff_pre;
-            category.vesting_months_remaining = vesting_pre;
-            transfer?;
-        }
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
     }
     category.months_claimed += total_months;
 
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_vesting_for_functional_category<'info>(
+    now: u64,
     category: &mut Account<'info, FunctionalCategoryData>,
     category_ata: AccountInfo<'info>,
     master_pda: &AccountInfo<'info>,
@@ -91,27 +92,30 @@ fn update_vesting_for_functional_category<'info>(
     require_keys_eq!(
         category_ata.key(),
         get_associated_token_address_with_program_id(
-            &category.to_account_info().key(),
+            &category.wallet,
             &mint.key(),
             &token_2022::ID,
-        )
+        ),
+        crate::error::ErrorCode::AtaMismatch,
     );
 
-    let cliff_pre = category.cliff_months_remaining;
-    let vesting_pre = category.vesting_months_remaining;
-
-    let now = Clock::get()?.unix_timestamp as u64;
     require!(
         category.cliff_started_at != 0,
         crate::error::ErrorCode::TgeNotHappened
     );
 
     let since_tge = now.saturating_sub(category.cliff_started_at);
-    let months_elapsed = (since_tge / VESTING_MONTH) as u8;
-    let total_months = months_elapsed.saturating_sub(category.months_claimed);
+    let months_elapsed = since_tge / VESTING_MONTH;
+    let total_months = months_elapsed
+        .saturating_sub(category.months_claimed as u64)
+        .min(48) as u8;
 
     if total_months == 0 {
         msg!("No claim available.");
+        msg!("Months since TGE:");
+        msg!(&months_elapsed.to_string());
+        msg!("Claiming for months:");
+        msg!(&total_months.to_string());
         return Ok(());
     }
 
@@ -139,13 +143,7 @@ fn update_vesting_for_functional_category<'info>(
         };
         let cpi_ctx =
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
-        let transfer = token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8);
-        if transfer.is_err() {
-            msg!("Unable to transfer tokens to the category. This really shouldn't happen.");
-            category.cliff_months_remaining = cliff_pre;
-            category.vesting_months_remaining = vesting_pre;
-            transfer?;
-        }
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
     }
     category.months_claimed += total_months;
 
@@ -155,6 +153,7 @@ fn update_vesting_for_functional_category<'info>(
 pub fn transfer_category_vestings<'info>(
     ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
 ) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp as u64;
     let master_ata = &ctx.accounts.master_ata;
     let master_pda = &ctx.accounts.master_pda;
     let mint = &ctx.accounts.mint;
@@ -163,6 +162,7 @@ pub fn transfer_category_vestings<'info>(
     let signer_seeds = &[&master_seeds[..]];
 
     if update_vesting_for_investor_category(
+        now,
         &mut ctx.accounts.pre_seed_cat,
         ctx.accounts.pre_seed_ata.to_account_info(),
         master_pda,
@@ -176,6 +176,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to pre-seed!");
     }
     if update_vesting_for_investor_category(
+        now,
         &mut ctx.accounts.seed_cat,
         ctx.accounts.seed_ata.to_account_info(),
         master_pda,
@@ -189,6 +190,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to seed!");
     }
     if update_vesting_for_investor_category(
+        now,
         &mut ctx.accounts.institutional_cat,
         ctx.accounts.institutional_ata.to_account_info(),
         master_pda,
@@ -202,6 +204,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to institutional!");
     }
     if update_vesting_for_investor_category(
+        now,
         &mut ctx.accounts.vgp_cat,
         ctx.accounts.vgp_ata.to_account_info(),
         master_pda,
@@ -215,6 +218,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to VGP!");
     }
     if update_vesting_for_investor_category(
+        now,
         &mut ctx.accounts.founders_cat,
         ctx.accounts.founders_ata.to_account_info(),
         master_pda,
@@ -228,6 +232,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to founders!");
     }
     if update_vesting_for_functional_category(
+        now,
         &mut ctx.accounts.marketing_cat,
         ctx.accounts.marketing_ata.to_account_info(),
         master_pda,
@@ -241,6 +246,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to marketing!");
     }
     if update_vesting_for_functional_category(
+        now,
         &mut ctx.accounts.reserve_cat,
         ctx.accounts.reserve_ata.to_account_info(),
         master_pda,
@@ -254,6 +260,7 @@ pub fn transfer_category_vestings<'info>(
         msg!("Failed to transfer tokens from master to reserve!");
     }
     if update_vesting_for_functional_category(
+        now,
         &mut ctx.accounts.liquidity_cat,
         ctx.accounts.liquidity_ata.to_account_info(),
         master_pda,

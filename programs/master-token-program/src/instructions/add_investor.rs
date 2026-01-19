@@ -25,12 +25,16 @@ pub fn add_investor_to_category<'info>(
     );
     
     investor.wallet = ctx.accounts.investor_wallet.key();
-    // has to wait an extra month if joined during vesting
-    investor.first_month_skipped = category.cliff_months_remaining > 0;
+    if category.cliff_months_remaining > 0 {
+        investor.cliff_months_remaining = category.cliff_months_remaining;
+        investor.vesting_months_remaining = category.vesting_months_remaining;
+    } else {
+        // has to wait an extra month if joined during vesting
+        investor.cliff_months_remaining = 1;
+        investor.vesting_months_remaining = category.vesting_months_remaining - 1;
+    }
     investor.monthly_allocation = monthly_allocation;
     investor.months_claimed = 0;
-    investor.cliff_months_remaining = category.cliff_months_remaining;
-    investor.vesting_months_remaining = category.vesting_months_remaining;
 
     category.investor_count += 1;
     category.unallocated_total_tokens -= monthly_allocation * category.vesting_months_remaining as u64;

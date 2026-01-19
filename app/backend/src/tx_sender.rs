@@ -9,6 +9,7 @@ use anchor_client::{
         message::{v0::Message, VersionedMessage},
         pubkey::Pubkey,
         signature::Signature,
+        signer::Signer,
         transaction::VersionedTransaction,
     },
 };
@@ -33,11 +34,15 @@ pub async fn build_versioned_tx_from_ixs(
         )
         .unwrap(),
     );
-    let num_signers = msg.header().num_required_signatures as usize;
     VersionedTransaction {
-        signatures: vec![Signature::default(); num_signers],
+        signatures: vec![Signature::default()],
         message: msg,
     }
+}
+
+pub fn add_signature(tx: &mut VersionedTransaction, signer: impl Signer) {
+    let msg_bytes = tx.message.serialize();
+    tx.signatures[0] = signer.sign_message(&msg_bytes);
 }
 
 pub async fn send_and_confirm_transaction(
@@ -46,7 +51,7 @@ pub async fn send_and_confirm_transaction(
     let rpc_client = RpcClient::new_with_timeout_and_commitment(
         RPC_URI.to_string(),
         Duration::from_secs(30),
-        CommitmentConfig::finalized(),
+        CommitmentConfig::confirmed(),
     );
 
     let send_cfg = RpcSendTransactionConfig {
