@@ -5,7 +5,7 @@ use mpl_token_metadata::{
     types::{PrintSupply, TokenStandard},
 };
 
-use crate::{SBT_DECIMALS, TOTAL_MINT_SUPPLY};
+use crate::{SBT_DECIMALS, SBT_METADATA_URL, TOTAL_MINT_SUPPLY};
 
 pub fn initialize_mint<'info>(
     ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
@@ -15,7 +15,7 @@ pub fn initialize_mint<'info>(
     CreateV1CpiBuilder::new(&ctx.accounts.mpl_metadata_program.to_account_info())
         .name("Sbarter".to_string())
         .symbol("SBT".to_string())
-        .uri("".to_string())
+        .uri(SBT_METADATA_URL.to_string())
         .metadata(&ctx.accounts.metadata)
         .mint(&ctx.accounts.mint.to_account_info(), true)
         .authority(&ctx.accounts.master_pda)
