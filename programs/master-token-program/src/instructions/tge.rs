@@ -165,7 +165,11 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
 
 #[derive(Accounts)]
 pub struct Tge<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
+    )]
     pub master: Signer<'info>,
     #[account(
         mut,

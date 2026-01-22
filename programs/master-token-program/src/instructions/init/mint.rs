@@ -1,41 +1,34 @@
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, solana_program::sysvar};
 use anchor_spl::{token_2022::Token2022, token_interface::Mint};
 use mpl_token_metadata::{
-    instructions::{CreateMetadataAccountV3Cpi, CreateMetadataAccountV3InstructionArgs},
-    types::DataV2,
+    instructions::CreateV1CpiBuilder,
+    types::{PrintSupply, TokenStandard},
 };
 
-use crate::{MASTER_WALLET, SBT_DECIMALS, TESTING};
+use crate::{SBT_DECIMALS, TOTAL_MINT_SUPPLY};
 
 pub fn initialize_mint<'info>(
     ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
 ) -> Result<()> {
-    let data = DataV2 {
-        name: "Sbarter".to_string(),
-        symbol: "SBT".to_string(),
-        uri: "".to_string(),
-        seller_fee_basis_points: 0,
-        creators: None,
-        collection: None,
-        uses: None,
-    };
-
-    let create_metadata_accounts_v3_ix = CreateMetadataAccountV3Cpi {
-        metadata: &ctx.accounts.metadata,
-        mint: &ctx.accounts.mint.to_account_info(),
-        mint_authority: &ctx.accounts.master,
-        payer: &ctx.accounts.master,
-        update_authority: (&ctx.accounts.master, true),
-        system_program: &ctx.accounts.system_program.to_account_info(),
-        rent: None,
-        __program: &ctx.accounts.mpl_metadata_program.to_account_info(),
-        __args: CreateMetadataAccountV3InstructionArgs {
-            data,
-            is_mutable: true,
-            collection_details: None,
-        },
-    };
-    create_metadata_accounts_v3_ix.invoke()?;
+    let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
+    let signer_seeds = &[&master_seeds[..]];
+    CreateV1CpiBuilder::new(&ctx.accounts.mpl_metadata_program.to_account_info())
+        .name("Sbarter".to_string())
+        .symbol("SBT".to_string())
+        .uri("".to_string())
+        .metadata(&ctx.accounts.metadata)
+        .mint(&ctx.accounts.mint.to_account_info(), true)
+        .authority(&ctx.accounts.master_pda)
+        .payer(&ctx.accounts.master)
+        .update_authority(&ctx.accounts.master, true)
+        .sysvar_instructions(&ctx.accounts.sysvar_instructions)
+        .system_program(&ctx.accounts.system_program.to_account_info())
+        .spl_token_program(Some(&ctx.accounts.token_program))
+        .seller_fee_basis_points(0)
+        .token_standard(TokenStandard::Fungible)
+        .print_supply(PrintSupply::Limited(TOTAL_MINT_SUPPLY))
+        .decimals(SBT_DECIMALS)
+        .invoke_signed(signer_seeds)?;
     Ok(())
 }
 
@@ -44,9 +37,16 @@ pub struct InitializeMint<'info> {
     #[account(
         mut,
         signer,
-        constraint = TESTING || master.key() == MASTER_WALLET
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,
+
+    #[account(
+        seeds = [b"master"],
+        bump
+    )]
+    /// CHECK: pda authority
+    pub master_pda: AccountInfo<'info>,
 
     /// CHECK: unintilialized metadata account PDA
     #[account(
@@ -65,7 +65,7 @@ pub struct InitializeMint<'info> {
         init,
         payer = master,
         mint::decimals = SBT_DECIMALS,
-        mint::authority = master,
+        mint::authority = master_pda,
         mint::token_program = token_program
     )]
     pub mint: InterfaceAccount<'info, Mint>,
@@ -73,5 +73,8 @@ pub struct InitializeMint<'info> {
     /// CHECK: mpl_token_metadata program
     #[account(address = mpl_token_metadata::ID)]
     pub mpl_metadata_program: AccountInfo<'info>,
+    /// CHECK: sysvar instructions account
+    #[account(address = sysvar::instructions::ID)]
+    pub sysvar_instructions: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }

@@ -19,7 +19,11 @@ pub fn admin_change_functional_category_wallet<'info>(
 #[derive(Accounts)]
 #[instruction(category_seed: String)]
 pub struct ChangeCategoryWallet<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
+    )]
     pub master: Signer<'info>,
 
     /// CHECK: old manager wallet from PDA

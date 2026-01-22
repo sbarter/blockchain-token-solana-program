@@ -9,11 +9,12 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Signer,
   SystemProgram,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
   Transaction,
 } from "@solana/web3.js";
 import {
-  createMint,
   getMint,
   getAssociatedTokenAddress,
   getAccount,
@@ -24,6 +25,7 @@ import {
 import { SbarterTokenPrograms } from "../target/types/sbarter_token_programs";
 import { getLogs } from "@solana-developers/helpers";
 
+const MPL_TOKEN_METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
 const DEVNET_EXPLORER_TX = (sig: string) =>
@@ -53,12 +55,21 @@ const FUNCTIONAL_CATEGORY_AUTHORITIES = {
 
 const ALL_CATEGORY_NAMES = INVESTOR_CATEGORY_NAMES.concat(FUNCTIONAL_CATEGORY_NAMES)
 
-const sendAndConfirmTx = async (tx: Transaction, connection: Connection, wallet: anchor.Wallet): Promise<string> => {
+const sendAndConfirmTx = async (
+  tx: Transaction,
+  connection: Connection,
+  wallet: anchor.Wallet,
+  additionalSigners: Signer[] = []
+): Promise<string> => {
   if (!wallet.publicKey) throw new Error('Wallet not connected');
   tx.feePayer = wallet.publicKey;
 
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
+
+  if (additionalSigners.length > 0) {
+    tx.partialSign(...additionalSigners);
+  }
 
   const signed = await wallet.signTransaction(tx);
 
@@ -75,6 +86,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
   let program: anchor.Program<SbarterTokenPrograms>;
   let master: Keypair;
   let wallet: anchor.Wallet;
+  let mintKeypair: Keypair;
   let mint: PublicKey;
 
   const categoryPdas: Record<string, PublicKey> = {};
@@ -102,34 +114,9 @@ describe("sbarterTokenPrograms (devnet)", function() {
     anchor.setProvider(provider);
     program = anchor.workspace.sbarterTokenPrograms as anchor.Program<SbarterTokenPrograms>;
 
-    // for (const wallet of Object.values(FUNCTIONAL_CATEGORY_AUTHORITIES)) {
-    //   console.log("Requesting airdrop for wallet:", wallet);
-    //   await connection.confirmTransaction(
-    //     await connection.requestAirdrop(wallet, 0.25 * LAMPORTS_PER_SOL)
-    //   );
-    //   const info = await connection.getAccountInfo(wallet);
-    //   console.log(info);
-    // }
-
     [masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master")], program.programId);
-
-    const decimals = 6;
-    mint = await createMint(
-      connection,
-      master, // payer
-      masterPda, // mint authority
-      null, // freeze authority
-      decimals,
-      Keypair.generate(),
-      { commitment: 'confirmed' },
-      TOKEN_2022_PROGRAM_ID
-    );
-    //
-    console.log("Mint created:", mint.toBase58());
-    console.log(
-      "Mint explorer:",
-      DEVNET_EXPLORER_ADDR(mint)
-    );
+    mintKeypair = Keypair.generate();
+    mint = mintKeypair.publicKey;
 
     masterAta = await getAssociatedTokenAddress(
       mint,
@@ -139,8 +126,9 @@ describe("sbarterTokenPrograms (devnet)", function() {
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    console.log("Master:", master.publicKey.toBase58());
-    console.log("Master ATA:", masterAta.toBase58(), DEVNET_EXPLORER_ADDR(masterAta));
+    console.log("master:", master.publicKey.toBase58());
+    console.log("master PDA:", masterPda.toBase58());
+    console.log("master ATA:", masterAta.toBase58(), DEVNET_EXPLORER_ADDR(masterAta));
     for (const cat of INVESTOR_CATEGORY_NAMES) {
       const [pda] = PublicKey.findProgramAddressSync(
         [Buffer.from(cat), mint.toBuffer()],
@@ -187,7 +175,34 @@ describe("sbarterTokenPrograms (devnet)", function() {
         DEVNET_EXPLORER_ADDR(categoryAtas[cat])
       );
     }
+  });
 
+  it("invoke initialize_mint", async () => {
+    const [metadata] = PublicKey.findProgramAddressSync([
+      Buffer.from("metadata"),
+      MPL_TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mint.toBuffer()],
+      MPL_TOKEN_METADATA_PROGRAM_ID);
+    try {
+      const tx = await program.methods.initializeMint().accountsStrict({
+        master: master.publicKey,
+        masterPda,
+        metadata,
+        mint,
+        mplMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        sysvarInstructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      }).signers([master, mintKeypair]).transaction();
+      const sig = await sendAndConfirmTx(tx, connection, wallet, [mintKeypair]);
+      console.log("initialize mint tx:", DEVNET_EXPLORER_TX(sig));
+    } catch (e: any) {
+      console.log("initialize_mint failed for mint:", mint)
+      console.log(e);
+      console.log((await e.getLogs()).join("\n"));
+      throw e;
+    }
+    console.log("mint created:", mint.toBase58());
   });
 
   it("invoke initialize", async () => {
@@ -281,7 +296,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       let tx: Transaction;
       try {
         tx = await program.methods
-          .addInvestorToCategory("preseed", i, new anchor.BN(1000000 * 1000000))
+          .categoryAddInvestor("preseed", i, new anchor.BN(1000000 * 1000000))
           .accounts(accounts("preseed", investorPda, investorWallet.publicKey, investorAta))
           .preInstructions([computeIx])
           .signers([master])
@@ -316,7 +331,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
       seedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
       const tx = await program.methods
-        .addInvestorToCategory("seed", i, new anchor.BN(2000000 * 1000000))
+        .categoryAddInvestor("seed", i, new anchor.BN(2000000 * 1000000))
         .accounts(accounts("seed", investorPda, investorWallet.publicKey, investorAta))
         .preInstructions([computeIx])
         .signers([master])
@@ -458,7 +473,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
         };
         console.log("\n");
 
-        const tx = await program.methods.transferCategoryVestings().preInstructions([]).accounts(accounts).transaction();
+        const tx = await program.methods.categoryTransferVestings().preInstructions([]).accounts(accounts).transaction();
         // const sig = "";
         const sig = await sendAndConfirmTx(tx, connection, wallet);
         console.log(`transferCategoryVestings #${i} tx:`, DEVNET_EXPLORER_TX(sig));
@@ -507,7 +522,7 @@ describe("sbarterTokenPrograms (devnet)", function() {
     let tx: Transaction;
     try {
       tx = await program.methods
-        .addInvestorToCategory("vgp", 1, new anchor.BN(1000000 * 1000000))
+        .categoryAddInvestor("vgp", 1, new anchor.BN(1000000 * 1000000))
         .accountsStrict({
           master: master.publicKey,
           masterPda,

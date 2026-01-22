@@ -20,7 +20,11 @@ pub fn admin_change_investor_wallet<'info>(
 #[derive(Accounts)]
 #[instruction(category_seed: String, investor_index: u16)]
 pub struct ChangeInvestorWallet<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
+    )]
     pub master: Signer<'info>,
 
     #[account(
