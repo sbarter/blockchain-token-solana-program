@@ -353,7 +353,10 @@ pub struct Initialize<'info> {
     /// CHECK: will be initialized
     pub liquidity_ata: UncheckedAccount<'info>,
 
-    #[account(mut, mint::authority = master_pda)]
+    #[account(
+        mut,
+        mint::authority = master_pda
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,

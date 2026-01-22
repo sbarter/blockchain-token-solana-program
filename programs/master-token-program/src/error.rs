@@ -10,6 +10,8 @@ pub enum ErrorCode {
     AtaMismatch,
     #[msg("Wrong investor index provided")]
     InvestorIndex,
+    #[msg("In order to change wallet pubkey, provide the old (current) wallet pubkey")]
+    OldPubkeyMismatch,
     #[msg("Invalid category seed")]
     CategorySeed,
     #[msg("Unable to allocate or move this amount of tokens because of overallocation")]

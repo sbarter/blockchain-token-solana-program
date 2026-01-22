@@ -71,7 +71,7 @@ fn update_vesting_for_investor_category<'info>(
         };
         let cpi_ctx =
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
-        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.months_claimed += total_months;
 
@@ -143,7 +143,7 @@ fn update_vesting_for_functional_category<'info>(
         };
         let cpi_ctx =
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
-        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS as u8)?;
+        token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.months_claimed += total_months;
 
@@ -279,7 +279,6 @@ pub fn transfer_category_vestings<'info>(
 #[derive(Accounts)]
 pub struct TransferCategoryVestings<'info> {
     #[account(
-        mut,
         seeds = [b"master"],
         bump
     )]
@@ -375,7 +374,6 @@ pub struct TransferCategoryVestings<'info> {
     #[account(mut)]
     pub liquidity_ata: UncheckedAccount<'info>,
 
-    #[account(mut)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     pub token_program: Program<'info, Token2022>,
     pub associated_token_program: Program<'info, AssociatedToken>,

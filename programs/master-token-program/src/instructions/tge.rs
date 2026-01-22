@@ -128,7 +128,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         cpi_accounts,
         signer_seeds,
     );
-    token_2022::transfer_checked(cpi_ctx, MARKETING_LIQUID_SUPPLY, SBT_DECIMALS as u8)?;
+    token_2022::transfer_checked(cpi_ctx, MARKETING_LIQUID_SUPPLY, SBT_DECIMALS)?;
 
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
@@ -141,7 +141,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
         cpi_accounts,
         signer_seeds,
     );
-    token_2022::transfer_checked(cpi_ctx, LIQUIDITY_LIQUID_SUPPLY, SBT_DECIMALS as u8)?;
+    token_2022::transfer_checked(cpi_ctx, LIQUIDITY_LIQUID_SUPPLY, SBT_DECIMALS)?;
 
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.master_ata.to_account_info(),
@@ -157,7 +157,7 @@ pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<(
     token_2022::transfer_checked(
         cpi_ctx,
         RESERVE_LIQUID_SUPPLY + RESERVE_PADDING,
-        SBT_DECIMALS as u8,
+        SBT_DECIMALS,
     )?;
 
     Ok(())

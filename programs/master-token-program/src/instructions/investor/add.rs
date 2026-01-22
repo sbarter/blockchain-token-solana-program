@@ -16,11 +16,15 @@ pub fn add_investor_to_category<'info>(
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
 
+    let Some(total_allocation) = monthly_allocation.checked_mul(category.vesting_months_remaining as u64) else {
+        return err!(crate::error::ErrorCode::TokensUnavailable);
+    };
+
     require!(category.is_open || category.cliff_started_at == 0, crate::error::ErrorCode::CategoryClosed);
     require_eq!(category.investor_count + 1, new_investor_index, crate::error::ErrorCode::InvestorIndex);
     require_gte!(
         category.unallocated_total_tokens,
-        monthly_allocation * category.vesting_months_remaining as u64,
+        total_allocation,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
     
@@ -30,6 +34,7 @@ pub fn add_investor_to_category<'info>(
         investor.vesting_months_remaining = category.vesting_months_remaining;
     } else {
         // has to wait an extra month if joined during vesting
+        // caller has to account for difference in monthly allocation in this case
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining = category.vesting_months_remaining - 1;
     }

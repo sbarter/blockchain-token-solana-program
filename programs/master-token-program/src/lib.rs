@@ -12,9 +12,9 @@ pub const TESTING: bool = std::option_env!("TESTING").is_some();
 /// Master multisig wallet that authorizes the operations (unless TESTING).
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
-pub const SBT_DECIMALS: u32 = 6;
+pub const SBT_DECIMALS: u8 = 6;
 pub const fn tokens(sbt: u64) -> u64 {
-    sbt * 10u64.pow(SBT_DECIMALS)
+    sbt * 10u64.pow(SBT_DECIMALS as u32)
 }
 
 pub const VESTING_MONTH: u64 = {
@@ -72,35 +72,27 @@ pub mod sbarter_token_programs {
 
     use super::*;
 
+    pub fn initialize_mint<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
+    ) -> Result<()> {
+        instructions::init::mint::initialize_mint(ctx)
+    }
+
     pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        instructions::init::initialize(ctx)
+        instructions::init::categories::initialize(ctx)
     }
 
     pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
         instructions::tge::start_tge(ctx)
     }
 
-    pub fn transfer_category_vestings<'info>(
-        ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
-    ) -> Result<()> {
-        instructions::category::transfer_category_vestings(ctx)
-    }
-
-    pub fn investor_claim_tokens<'info>(
-        ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
-        category_seed: String,
-        investor_index: u16,
-    ) -> Result<()> {
-        instructions::claim::investor_claim_tokens(ctx, category_seed, investor_index)
-    }
-
-    pub fn add_investor_to_category<'info>(
+    pub fn category_add_investor<'info>(
         ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
         new_investor_index: u16,
         monthly_allocation: u64,
     ) -> Result<()> {
-        instructions::add_investor::add_investor_to_category(
+        instructions::investor::add::add_investor_to_category(
             ctx,
             category_seed,
             new_investor_index,
@@ -108,19 +100,55 @@ pub mod sbarter_token_programs {
         )
     }
 
-    pub fn withdraw_from_category<'info>(
+    pub fn category_transfer_vestings<'info>(
+        ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
+    ) -> Result<()> {
+        instructions::category_claim::transfer_category_vestings(ctx)
+    }
+
+    pub fn category_change_manager_wallet<'info>(
+        ctx: Context<'_, '_, '_, 'info, ChangeCategoryWallet<'info>>,
+        category_seed: String,
+    ) -> Result<()> {
+        instructions::category::change_wallet::admin_change_functional_category_wallet(
+            ctx,
+            category_seed,
+        )
+    }
+
+    pub fn category_withdraw<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
         category_seed: String,
         amount: u64,
     ) -> Result<()> {
-        instructions::withdraw::withdraw_category_tokens(ctx, category_seed, amount)
+        instructions::category::withdraw::withdraw_category_tokens(ctx, category_seed, amount)
     }
 
-    pub fn deposit_into_category<'info>(
+    pub fn category_deposit<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
         category_seed: String,
         amount: u64,
     ) -> Result<()> {
-        instructions::deposit::deposit_category_tokens(ctx, category_seed, amount)
+        instructions::category::deposit::deposit_category_tokens(ctx, category_seed, amount)
+    }
+
+    pub fn investor_claim_tokens<'info>(
+        ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
+        category_seed: String,
+        investor_index: u16,
+    ) -> Result<()> {
+        instructions::investor_claim::investor_claim_tokens(ctx, category_seed, investor_index)
+    }
+
+    pub fn investor_change_wallet<'info>(
+        ctx: Context<'_, '_, '_, 'info, ChangeInvestorWallet<'info>>,
+        category_seed: String,
+        investor_index: u16,
+    ) -> Result<()> {
+        instructions::investor::change_wallet::admin_change_investor_wallet(
+            ctx,
+            category_seed,
+            investor_index,
+        )
     }
 }

@@ -25,7 +25,7 @@ pub fn deposit_category_tokens<'info>(
         mint: ctx.accounts.mint.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS as u8)?;
+    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS)?;
     category.unallocated_total_tokens += amount;
 
     Ok(())

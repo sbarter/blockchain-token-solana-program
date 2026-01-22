@@ -50,7 +50,7 @@ pub fn withdraw_category_tokens<'info>(
         cpi_accounts,
         signer_seeds,
     );
-    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS as u8)?;
+    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS)?;
     ctx.accounts.category.unallocated_total_tokens -= amount;
 
     Ok(())
