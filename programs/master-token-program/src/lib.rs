@@ -12,13 +12,8 @@ pub const TESTING: bool = std::option_env!("TESTING").is_some();
 /// Master multisig wallet that authorizes the operations (unless TESTING).
 pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
 
-pub const SBT_METADATA_URL: &str = {
-    if !TESTING {
-        "" // TODO: !
-    } else {
-        "https://developed-amaranth-skunk.myfilebase.com/ipfs/QmXTXhJo7AzH19EwwCwEuTGi4memUfssaLMVTFm5Ed2Bv9"
-    }
-};
+pub const SBT_METADATA_URL: &str =
+    "https://ipfs.io/ipfs/Qmdgzq9Rj8nUHr5erKTfqq3J5rm5XrWPTi1ceJCZmezp7S";
 pub const SBT_DECIMALS: u8 = 6;
 pub const fn tokens(sbt: u64) -> u64 {
     sbt * 10u64.pow(SBT_DECIMALS as u32)
