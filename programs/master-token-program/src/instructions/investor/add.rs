@@ -71,7 +71,7 @@ pub struct AddInvestorToCategory<'info> {
         payer = master,
         seeds = [category_seed.as_bytes(), new_investor_index.to_le_bytes().as_ref(),
         mint.key().as_ref()],
-        space = Investor::LEN,
+        space = 8 + Investor::INIT_SPACE,
         bump
     )]
     pub investor_pda: Account<'info, Investor>,

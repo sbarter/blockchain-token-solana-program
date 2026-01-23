@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, InitSpace)]
 #[account]
 pub struct Investor {
     pub wallet: Pubkey,
@@ -9,8 +9,4 @@ pub struct Investor {
     pub months_claimed: u8,
     pub cliff_months_remaining: u8,
     pub vesting_months_remaining: u8,
-}
-
-impl Investor {
-    pub const LEN: usize = 8 + 32 + 8 + 1 + 1 + 1;
 }
