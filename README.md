@@ -53,11 +53,13 @@ sequenceDiagram
     participant Category as Category PDAs
     participant Investor as Individual Investors
 
-    %% 1. Pre-TGE: configure sale and allocations
+    Admin->>Program: initialize_mint(mint)
+    Program->>Mint: create_account()
+    Program->>Mint: create_mint_metadata()
+    Program-->>Admin: initialize_mint success
     Admin->>Program: initialize(mint, category_addresses[pre_seed..liquidity], vault)
     Program->>MasterPda: create_master_vault()
 
-    %% 2. Pre-TGE: create vesting PDAs & escrow full allocations
     loop For each allocation category
         Program->>Category: initialize_category(cliff, vesting, monthly_allocation,...)
         Category-->>Program: initialized
@@ -65,7 +67,7 @@ sequenceDiagram
     Program-->>Admin: initialized
 
     loop For each individual investor
-        Admin->>Program: add_investor(category, investor_id, allocation)
+        Admin->>Program: category_add_investor(category, investor_id, allocation)
         Program->>Investor: create_investor_pda(category, investor_id, allocation)
         Program->>Category: investor_count++
     end
@@ -95,7 +97,7 @@ sequenceDiagram
     participant Clock as Solana Clock Sysvar
     participant Investor as Individual Investor
 
-    Cronjob->>Program: transfer_category_vestings(categories) (permissionless)
+    Cronjob->>Program: category_transfer_vestings(categories) (permissionless)
     loop For each category
         Program->>Clock: get_current_time()
         Clock-->>Program: now
@@ -106,7 +108,7 @@ sequenceDiagram
             Program->>Category: transfer(available)
         end
     end
-    Program-->>Cronjob: transfer_categorry_vesting successful
+    Program-->>Cronjob: category_transfer_vestings successful
 
     loop For each investor (category, investor_id)
         Cronjob->>Program: investor_claim_tokens(category, investor_id) (permissionless)
@@ -138,15 +140,15 @@ sequenceDiagram
     participant Category1 as Category 1 PDA
     participant Category2 as Category 2 PDA
 
-    Admin->>Program: withdraw_category_tokens(category1, amount, recipient)
+    Admin->>Program: category_withdraw_tokens(category1, amount, recipient)
     Program->>Program: check(amount <= total_unallocated_tokens)
     Program->>Category1: get_account()
     Category1-->>Program: category_balance, category_unclaimed
     Program->>Program: check(amount <= (category_balance - category_unclaimed))
     Program->>Manager: transfer(amount)
-    Program-->>Admin: withdraw_category_tokens successful
+    Program-->>Admin: category_withdraw_tokens successful
 
-    Manager->>Program: deposit_category_tokens(category2, amount)
+    Manager->>Program: category_deposit_tokens(category2, amount)
     Program->>Category2: transfer(amount)
-    Program-->>Manager: deposit_category_tokens successful
+    Program-->>Manager: category_deposit_tokens successful
 ```
