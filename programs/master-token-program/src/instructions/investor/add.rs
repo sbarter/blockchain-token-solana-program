@@ -34,7 +34,7 @@ pub fn add_investor_to_category<'info>(
         investor.vesting_months_remaining = category.vesting_months_remaining;
     } else {
         // has to wait an extra month if joined during vesting
-        // caller has to account for difference in monthly allocation in this case
+        // caller has to account for difference in total allocation in this case
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining = category.vesting_months_remaining - 1;
     }
@@ -51,7 +51,11 @@ pub fn add_investor_to_category<'info>(
 #[derive(Accounts)]
 #[instruction(category_seed: String, new_investor_index: u16, monthly_allocation: u64)]
 pub struct AddInvestorToCategory<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer @ crate::error::ErrorCode::MasterMustSign,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
+    )]
     pub master: Signer<'info>,
     
     #[account(

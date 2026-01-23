@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::Mint,
 };
 
-use crate::{states::category::*, MASTER_WALLET, TESTING};
+use crate::states::category::*;
 
 fn create_master_ata<'info>(ctx: &Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
     let expected_master_ata = get_associated_token_address_with_program_id(
@@ -234,8 +234,8 @@ pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> 
 pub struct Initialize<'info> {
     #[account(
         mut,
-        signer,
-        constraint = TESTING || master.key() == MASTER_WALLET
+        signer @ crate::error::ErrorCode::MasterMustSign,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,
 
@@ -254,7 +254,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = InvestorCategoryData::LEN,
+        space = 8 + InvestorCategoryData::INIT_SPACE,
         seeds = [PRE_SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -266,7 +266,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = InvestorCategoryData::LEN,
+        space = 8 + InvestorCategoryData::INIT_SPACE,
         seeds = [SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -278,7 +278,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = InvestorCategoryData::LEN,
+        space = 8 + InvestorCategoryData::INIT_SPACE,
         seeds = [INSTITUTIONAL_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -290,7 +290,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = InvestorCategoryData::LEN,
+        space = 8 + InvestorCategoryData::INIT_SPACE,
         seeds = [VGP_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -302,7 +302,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = InvestorCategoryData::LEN,
+        space = 8 + InvestorCategoryData::INIT_SPACE,
         seeds = [FOUNDERS_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -314,7 +314,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = FunctionalCategoryData::LEN,
+        space = 8 + FunctionalCategoryData::INIT_SPACE,
         seeds = [MARKETING_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -328,7 +328,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = FunctionalCategoryData::LEN,
+        space = 8 + FunctionalCategoryData::INIT_SPACE,
         seeds = [RESERVE_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
@@ -342,7 +342,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = master,
-        space = FunctionalCategoryData::LEN,
+        space = 8 + FunctionalCategoryData::INIT_SPACE,
         seeds = [LIQUIDITY_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]

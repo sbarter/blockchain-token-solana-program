@@ -76,7 +76,7 @@ impl MasterTokenProgram {
             .coder
             .request()
             .accounts(accounts)
-            .args(master_token_program::instruction::TransferCategoryVestings)
+            .args(master_token_program::instruction::CategoryTransferVestings)
             .instructions()?
             .remove(0);
 

@@ -36,7 +36,7 @@ pub fn initialize_mint<'info>(
 pub struct InitializeMint<'info> {
     #[account(
         mut,
-        signer,
+        signer @ crate::error::ErrorCode::MasterMustSign,
         constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,

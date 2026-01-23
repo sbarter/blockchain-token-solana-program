@@ -22,7 +22,7 @@ pub fn admin_change_investor_wallet<'info>(
 pub struct ChangeInvestorWallet<'info> {
     #[account(
         mut,
-        signer,
+        signer @ crate::error::ErrorCode::MasterMustSign,
         constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,

@@ -21,7 +21,7 @@ pub fn admin_change_functional_category_wallet<'info>(
 pub struct ChangeCategoryWallet<'info> {
     #[account(
         mut,
-        signer,
+        signer @ crate::error::ErrorCode::MasterMustSign,
         constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,

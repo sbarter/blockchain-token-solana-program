@@ -8,7 +8,7 @@ one-by-one, and the TGE instruction is triggered. All of the above are signed
 by the Sbarter Multisig Wallet.
 
 The program also exposes two permissionless instructions:
-`transfer_category_vestings` and `investor_claim_tokens`, that can be run
+`category_transfer_vestings` and `investor_claim_tokens`, that can be run
 manually by anybody incentivized or by the first-party Automation Cronjob.
 
 ## How to test
@@ -23,7 +23,7 @@ env TESTING=1 anchor build
 
 ```bash
 solana-test-validator -r \
-    --bpf-program 47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y target/sbpf-solana-solana/release/master_token_program.so \
+    --bpf-program 5LnwuNSM9TKgr69YXoLCdCdoZ7SZ1kvtYAdknPGSJ3KX target/sbpf-solana-solana/release/master_token_program.so \
     --clone TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb \
     --clone ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL \
     --url devnet

@@ -59,7 +59,11 @@ pub fn withdraw_category_tokens<'info>(
 #[derive(Accounts)]
 #[instruction(category_seed: String, amount: u64)]
 pub struct WithdrawCategoryTokens<'info> {
-    #[account(mut, signer, address = crate::MASTER_WALLET)]
+    #[account(
+        mut,
+        signer @ crate::error::ErrorCode::MasterMustSign,
+        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
+    )]
     pub master: Signer<'info>,
 
     #[account(
