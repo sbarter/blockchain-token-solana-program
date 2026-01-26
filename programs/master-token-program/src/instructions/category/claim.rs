@@ -38,12 +38,13 @@ fn update_vesting_for_investor_category<'info>(
         .saturating_sub(category.months_claimed as u64)
         .min(48) as u8;
 
+    msg!("Months since TGE:");
+    msg!(&months_elapsed.to_string());
+    msg!("Claiming for months:");
+    msg!(&total_months.to_string());
+
     if total_months == 0 {
         msg!("No claim available.");
-        msg!("Months since TGE:");
-        msg!(&months_elapsed.to_string());
-        msg!("Claiming for months:");
-        msg!(&total_months.to_string());
         return Ok(());
     }
 

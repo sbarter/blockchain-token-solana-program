@@ -53,6 +53,7 @@ const FUNCTIONAL_CATEGORY_AUTHORITIES = {
 
 const ALL_CATEGORY_NAMES = INVESTOR_CATEGORY_NAMES.concat(FUNCTIONAL_CATEGORY_NAMES)
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const sendAndConfirmTx = async (
   tx: Transaction,
   connection: Connection,
@@ -96,7 +97,8 @@ class TestContext {
   async executeInstruction(
     name: string,
     buildTx: () => Promise<Transaction>,
-    additionalSigners: Signer[] = []
+    additionalSigners: Signer[] = [],
+    silentError: boolean = false
   ): Promise<string> {
     try {
       const tx = await buildTx();
@@ -105,9 +107,11 @@ class TestContext {
       return sig;
     } catch (e: any) {
       console.error(`${name} failed:`, e.message);
-      if (e.getLogs) {
-        const logs = await e.getLogs();
-        console.error(logs.join("\n"));
+      if (!silentError) {
+        if (e.getLogs) {
+          const logs = await e.getLogs();
+          console.error(logs.join("\n"));
+        }
       }
       throw e;
     }
@@ -179,9 +183,18 @@ class TestContext {
     investorIndex: number,
     amount: anchor.BN,
     investorWallet: PublicKey,
-    investorPda: PublicKey,
-    investorAta: PublicKey
   ): Promise<string> {
+    const [investorPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(categorySeed), Buffer.from(new Uint8Array(new Uint16Array([investorIndex]).buffer)), this.mint.toBuffer()],
+      this.program.programId
+    );
+    const investorAta = getAssociatedTokenAddressSync(
+      this.mint,
+      investorWallet,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
     const accounts = {
       master: this.master.publicKey,
       masterPda: this.masterPda,
@@ -209,7 +222,7 @@ class TestContext {
     );
   }
 
-  async tge(): Promise<string> {
+  async tge(silentError: boolean = false): Promise<string> {
     const accounts: Record<string, PublicKey> = {
       master: this.master.publicKey,
       masterPda: this.masterPda,
@@ -236,7 +249,9 @@ class TestContext {
 
     return this.executeInstruction(
       "tge",
-      () => this.program.methods.tge().preInstructions([]).accounts(accounts).signers([this.master]).transaction()
+      () => this.program.methods.tge().preInstructions([]).accounts(accounts).signers([this.master]).transaction(),
+      [],
+      silentError
     );
   }
 
@@ -273,7 +288,18 @@ class TestContext {
     );
   }
 
-  async investorClaimTokens(categorySeed: string, investorIndex: number, investorPda: PublicKey, investorAta: PublicKey): Promise<string> {
+  async investorClaimTokens(categorySeed: string, investorIndex: number, investorWallet: PublicKey): Promise<string> {
+    const [investorPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(categorySeed), Buffer.from(new Uint8Array(new Uint16Array([investorIndex]).buffer)), this.mint.toBuffer()],
+      this.program.programId
+    );
+    const investorAta = getAssociatedTokenAddressSync(
+      this.mint,
+      investorWallet,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
     const accounts = {
       category: this.categoryPdas[categorySeed],
       categoryAta: this.categoryAtas[categorySeed],
@@ -291,6 +317,73 @@ class TestContext {
         .investorClaimTokens(categorySeed, investorIndex)
         .accounts(accounts)
         .transaction()
+    );
+  }
+
+  async investorChangeWallet(categorySeed: string, investorIndex: number, oldWallet: PublicKey, newWallet: PublicKey, silentError: boolean = false): Promise<string> {
+    const [investorPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(categorySeed), Buffer.from(new Uint8Array(new Uint16Array([investorIndex]).buffer)), this.mint.toBuffer()],
+      this.program.programId
+    );
+    const newInvestorAta = getAssociatedTokenAddressSync(
+      this.mint,
+      newWallet,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+    const accounts = {
+      category: this.categoryPdas[categorySeed],
+      investorPda,
+      oldInvestorWallet: oldWallet,
+      newInvestorWallet: newWallet,
+      newInvestorAta,
+      mint: this.mint,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_ID
+    };
+
+    return this.executeInstruction(
+      `investorChangeWallet_${categorySeed}_${investorIndex}`,
+      () => this.program.methods
+        .investorChangeWallet(categorySeed, investorIndex)
+        .accounts(accounts)
+        .signers([this.master])
+        .transaction(),
+      [],
+      silentError
+    );
+  }
+
+  async categoryChangeWallet(categorySeed: string, oldWallet: PublicKey, newWallet: PublicKey, silentError: boolean = false): Promise<string> {
+    const newManagerAta = getAssociatedTokenAddressSync(
+      this.mint,
+      newWallet,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+    const accounts = {
+      category: this.categoryPdas[categorySeed],
+      oldManagerWallet: oldWallet,
+      newManagerWallet: newWallet,
+      newManagerAta,
+      mint: this.mint,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SYSTEM_PROGRAM_ID
+    };
+
+    return this.executeInstruction(
+      `categoryChangeManagerWallet_${categorySeed}`,
+      () => this.program.methods
+        .categoryChangeManagerWallet(categorySeed)
+        .accounts(accounts)
+        .signers([this.master])
+        .transaction(),
+      [],
+      silentError
     );
   }
 
@@ -460,8 +553,7 @@ describe("sbarterTokenPrograms", function() {
 
       ctx.preseedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
-      const sig = await ctx.categoryAddInvestor("preseed", i, new anchor.BN(1000000 * 1000000), investorWallet.publicKey, investorPda, investorAta);
-      console.log(`Added preseed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+      await ctx.categoryAddInvestor("preseed", i, new anchor.BN(1000000 * 1000000), investorWallet.publicKey);
     }
 
     for (let i = 1; i <= 2; i++) {
@@ -480,8 +572,7 @@ describe("sbarterTokenPrograms", function() {
 
       ctx.seedInvestors.push({ wallet: investorWallet, pda: investorPda, ata: investorAta });
 
-      const sig = await ctx.categoryAddInvestor("seed", i, new anchor.BN(2000000 * 1000000), investorWallet.publicKey, investorPda, investorAta);
-      console.log(`Added seed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+      await ctx.categoryAddInvestor("seed", i, new anchor.BN(2000000 * 1000000), investorWallet.publicKey);
     }
 
     console.log(`Total preseed investors: ${ctx.preseedInvestors.length}`);
@@ -501,6 +592,7 @@ describe("sbarterTokenPrograms", function() {
 
     const masterAcc = await getAccount(ctx.connection, ctx.masterAta, "confirmed", TOKEN_2022_PROGRAM_ID);
     const marketingAcc = await getAccount(ctx.connection, ctx.categoryAtas["marketing"], "confirmed", TOKEN_2022_PROGRAM_ID);
+    const reserveAcc = await getAccount(ctx.connection, ctx.categoryAtas["reserve"], "confirmed", TOKEN_2022_PROGRAM_ID);
     const liquidityAcc = await getAccount(ctx.connection, ctx.categoryAtas["liquidity"], "confirmed", TOKEN_2022_PROGRAM_ID);
 
     console.log("master ATA balance (raw):", masterAcc.amount.toString());
@@ -508,12 +600,21 @@ describe("sbarterTokenPrograms", function() {
     console.log("liquidity ATA balance (raw):", liquidityAcc.amount.toString());
 
     assert(masterAcc.amount > BigInt(0), "master ATA should have tokens after tge");
-    assert(marketingAcc.amount >= BigInt(0), "marketing ATA exists");
-    assert(liquidityAcc.amount >= BigInt(0), "liquidity ATA exists");
+    assert(marketingAcc.amount > BigInt(0), "marketing ATA should have tokens after tge");
+    assert(reserveAcc.amount > BigInt(0), "reserve ATA should have tokens after tge");
+    assert(liquidityAcc.amount > BigInt(0), "liquidity ATA should have tokens after tge");
+  });
+
+  it("fail to invoke tge a second time", async () => {
+    try {
+      await ctx.tge(true);
+    } catch (e: any) {
+      return
+    }
+    assert.fail("invoking TGE a second time didn't throw an error");
   });
 
   it("invoke categoryTransferVestings a bunch of times and track balances", async () => {
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     const beforeBalances = await ctx.getBalances();
     console.log("Balances before transferCategoryVestings:", beforeBalances);
@@ -551,16 +652,7 @@ describe("sbarterTokenPrograms", function() {
       [Buffer.from("vgp"), Buffer.from(new Uint8Array(new Uint16Array([1]).buffer)), ctx.mint.toBuffer()],
       ctx.program.programId
     );
-    const investorAta = getAssociatedTokenAddressSync(
-      ctx.mint,
-      investorWallet.publicKey,
-      false,
-      TOKEN_2022_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    const sig = await ctx.categoryAddInvestor("vgp", 1, new anchor.BN(1000000 * 1000000), investorWallet.publicKey, investorPda, investorAta);
-    console.log(`Added vgp investor 1: ${DEVNET_EXPLORER_TX(sig)}`);
+    await ctx.categoryAddInvestor("vgp", 1, new anchor.BN(1000000 * 1000000), investorWallet.publicKey);
 
     const investorData = await ctx.program.account.investor.fetch(investorPda);
     assert(investorData.cliffMonthsRemaining == 1, "investor added during TGE should have an extra cliff month");
@@ -568,11 +660,75 @@ describe("sbarterTokenPrograms", function() {
 
   it("claim funds for preseed investors manually", async () => {
     for (let i = 1; i <= 5; i++) {
-      const sig = await ctx.investorClaimTokens("preseed", i, ctx.preseedInvestors[i - 1].pda, ctx.preseedInvestors[i - 1].ata);
-      console.log(`Claimed for preseed investor ${i}: ${DEVNET_EXPLORER_TX(sig)}`);
+      await ctx.investorClaimTokens("preseed", i, ctx.preseedInvestors[i - 1].wallet.publicKey);
 
       const balance = await ctx.connection.getTokenAccountBalance(ctx.preseedInvestors[i - 1].ata);
       console.log(`Preseed investor ${i} balance: ${balance.value.uiAmount}`);
+      assert(balance.value.uiAmount > 0, "no tokens were claimed for preseed investor");
     }
+  });
+
+  it("fail to add an investor with the same id", async () => {
+    const investorWallet = Keypair.generate();
+    try {
+      await ctx.categoryAddInvestor("vgp", 1, new anchor.BN(1000000), investorWallet.publicKey);
+    } catch (e: any) {
+      return
+    }
+    assert.fail("creating a vgp investor with id:1 didn't throw an error");
+  });
+
+  it("fail to add an investor with an allocation too large", async () => {
+    const investorWallet = Keypair.generate();
+    try {
+      await ctx.categoryAddInvestor("founders", 1, new anchor.BN(1000000000000 * 1000000), investorWallet.publicKey);
+    } catch (e: any) {
+      return
+    }
+    assert.fail("creating an investor with an overallocation didn't throw an error");
+  });
+
+  it("change investor wallet", async () => {
+    let investorAccounts = ctx.seedInvestors[0];
+    const newInvestorWallet = Keypair.generate();
+    await ctx.investorChangeWallet("seed", 1, investorAccounts.wallet.publicKey, newInvestorWallet.publicKey);
+
+    await sleep(3 * 1000);
+    let investor = await ctx.program.account.investor.fetch(investorAccounts.pda, 'processed');
+    assert.equal(investor.wallet.toBase58(), newInvestorWallet.publicKey.toBase58(), "the investor wallet didn't change");
+  });
+
+  it("fail to change investor wallet without providing the old one", async () => {
+    let investorAccounts = ctx.seedInvestors[1];
+    const newInvestorWallet = Keypair.generate();
+    try {
+      await ctx.investorChangeWallet("seed", 2, SYSTEM_PROGRAM_ID, newInvestorWallet.publicKey, true);
+    } catch { }
+
+    await sleep(3 * 1000);
+    let investor = await ctx.program.account.investor.fetch(investorAccounts.pda, 'processed');
+    assert.equal(investor.wallet.toBase58(), investorAccounts.wallet.publicKey.toBase58(), "the investor wallet changed");
+  });
+
+  it("change marketing manager wallet", async () => {
+    const newManagerWallet = Keypair.generate();
+
+    await ctx.categoryChangeWallet("marketing", FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"], newManagerWallet.publicKey);
+
+    await sleep(3 * 1000);
+    let marketingCatPost = await ctx.program.account.functionalCategoryData.fetch(ctx.categoryPdas["marketing"], 'processed');
+    assert.equal(marketingCatPost.wallet.toBase58(), newManagerWallet.publicKey.toBase58(), "the manager wallet didn't change");
+  });
+
+  it("fail to change reserve manager wallet without providing the old one", async () => {
+    const newManagerWallet = Keypair.generate();
+
+    try {
+      await ctx.categoryChangeWallet("reserve", SYSTEM_PROGRAM_ID, newManagerWallet.publicKey, true);
+    } catch { }
+
+    await sleep(3 * 1000);
+    let reserveCatPost = await ctx.program.account.functionalCategoryData.fetch(ctx.categoryPdas["reserve"], 'processed');
+    assert.equal(reserveCatPost.wallet.toBase58(), FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"].toBase58(), "the manager wallet changed");
   });
 });
