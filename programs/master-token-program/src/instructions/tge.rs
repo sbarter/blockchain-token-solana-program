@@ -28,8 +28,6 @@ fn has_enough_investors<'info>(
 }
 
 pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
-    // Already checked that `master` is the mint authority.
-
     require_keys_eq!(
         ctx.accounts.master_ata.key(),
         get_associated_token_address_with_program_id(

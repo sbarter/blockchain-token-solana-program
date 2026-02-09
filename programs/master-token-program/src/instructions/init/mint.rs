@@ -19,8 +19,8 @@ pub fn initialize_mint<'info>(
         .metadata(&ctx.accounts.metadata)
         .mint(&ctx.accounts.mint.to_account_info(), true)
         .authority(&ctx.accounts.master_pda)
-        .payer(&ctx.accounts.master)
-        .update_authority(&ctx.accounts.master, true)
+        .payer(&ctx.accounts.authority)
+        .update_authority(&ctx.accounts.authority, true)
         .sysvar_instructions(&ctx.accounts.sysvar_instructions)
         .system_program(&ctx.accounts.system_program.to_account_info())
         .spl_token_program(Some(&ctx.accounts.token_program))
@@ -34,12 +34,8 @@ pub fn initialize_mint<'info>(
 
 #[derive(Accounts)]
 pub struct InitializeMint<'info> {
-    #[account(
-        mut,
-        signer @ crate::error::ErrorCode::MasterMustSign,
-        constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
-    )]
-    pub master: Signer<'info>,
+    #[account(mut, signer)]
+    pub authority: Signer<'info>,
 
     #[account(
         seeds = [b"master"],
@@ -63,7 +59,7 @@ pub struct InitializeMint<'info> {
 
     #[account(
         init,
-        payer = master,
+        payer = authority,
         mint::decimals = SBT_DECIMALS,
         mint::authority = master_pda,
         mint::token_program = token_program

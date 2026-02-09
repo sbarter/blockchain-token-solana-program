@@ -127,7 +127,7 @@ class TestContext {
     return this.executeInstruction(
       "initialize_mint",
       () => this.program.methods.initializeMint().accountsStrict({
-        master: this.master.publicKey,
+        authority: this.master.publicKey,
         masterPda: this.masterPda,
         metadata,
         mint: this.mint,
@@ -452,6 +452,8 @@ describe("sbarterTokenPrograms", function() {
     [ctx.masterPda] = PublicKey.findProgramAddressSync([Buffer.from("master")], ctx.program.programId);
     ctx.mintKeypair = Keypair.generate();
     ctx.mint = ctx.mintKeypair.publicKey;
+
+    console.log("Generated mint keypair:", ctx.mintKeypair.secretKey);
 
     ctx.masterAta = await getAssociatedTokenAddress(
       ctx.mint,
