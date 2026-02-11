@@ -37,8 +37,10 @@ env TESTING=1 anchor test --skip-local-validator --skip-deploy
 
 (`anchor test` normally loads programs automagically, but it never ever works
 for me.)
-You also need a keypair at `~/.config/solana/id.json` to run it.
-It will be used as an example master authority, instead of the Multisig.
+
+- You will need a keypair at `~/.config/solana/id.json` to run it.
+  It will be used as an example master authority, instead of the Multisig.
+- Also consider replacing the public RPC URL with a dedicated one.
 
 ## Key flow sequences
 
