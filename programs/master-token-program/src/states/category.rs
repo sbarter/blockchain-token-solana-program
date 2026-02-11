@@ -58,7 +58,7 @@ pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
         investor_count: 0,
         is_open: false,
     },
-    pre_investors: 5,
+    pre_investors: 3,
 };
 
 pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {

@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::{states::{Investor, InvestorCategoryData}};
+use crate::states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
@@ -15,6 +15,15 @@ pub fn add_investor_to_category<'info>(
 ) -> Result<()> {
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
+
+    let pre_investors = match _category_seed.as_str() { 
+        "preseed" => PRE_SEED_CATEGORY.pre_investors,
+        "seed" => SEED_CATEGORY.pre_investors,
+        _ => 0,
+    };
+    if pre_investors != 0 && new_investor_index > pre_investors {
+        return err!(crate::error::ErrorCode::ClosedCategoryExceed);
+    }
 
     let Some(total_allocation) = monthly_allocation.checked_mul(category.vesting_months_remaining as u64) else {
         return err!(crate::error::ErrorCode::TokensUnavailable);

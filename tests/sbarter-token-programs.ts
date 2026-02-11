@@ -193,6 +193,7 @@ class TestContext {
     investorIndex: number,
     amount: anchor.BN,
     investorWallet: PublicKey,
+    silentError: boolean = false,
   ): Promise<string> {
     const [investorPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(categorySeed), Buffer.from(new Uint8Array(new Uint16Array([investorIndex]).buffer)), this.mint.toBuffer()],
@@ -227,7 +228,9 @@ class TestContext {
         })
         .preInstructions([computeIx])
         .signers([this.master])
-        .transaction()
+        .transaction(),
+      [],
+      silentError
     );
   }
 
@@ -497,7 +500,7 @@ describe("sbarterTokenPrograms", function() {
       const ata = await getAssociatedTokenAddress(
         ctx.mint,
         FUNCTIONAL_CATEGORY_AUTHORITIES[cat],
-        false,
+        true,
         TOKEN_2022_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
@@ -543,7 +546,7 @@ describe("sbarterTokenPrograms", function() {
   });
 
   it("initialize closed category investors", async () => {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 3; i++) {
       const investorWallet = Keypair.generate();
       const [investorPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("preseed"), Buffer.from(new Uint8Array(new Uint16Array([i]).buffer)), ctx.mint.toBuffer()],
@@ -583,6 +586,16 @@ describe("sbarterTokenPrograms", function() {
 
     console.log(`Total preseed investors: ${ctx.preseedInvestors.length}`);
     console.log(`Total seed investors: ${ctx.seedInvestors.length}`);
+  });
+
+  it("fail to add more closed category investors than configured", async () => {
+    const investorWallet = Keypair.generate();
+    try {
+      await ctx.categoryAddInvestor("seed", 3, new anchor.BN(2000000 * 1000000), investorWallet.publicKey, true);
+    } catch (e: any) {
+      return
+    }
+    assert.fail("adding an investor beyond configured amount didn't throw an error");
   });
 
   it("invoke tge: mints to master and transfers to marketing & liquidity; check mint authority", async () => {
@@ -665,7 +678,7 @@ describe("sbarterTokenPrograms", function() {
   });
 
   it("claim funds for preseed investors manually", async () => {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 3; i++) {
       await ctx.investorClaimTokens("preseed", i, ctx.preseedInvestors[i - 1].wallet.publicKey);
 
       const balance = await ctx.connection.getTokenAccountBalance(ctx.preseedInvestors[i - 1].ata);
