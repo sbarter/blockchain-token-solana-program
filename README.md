@@ -37,6 +37,8 @@ env TESTING=1 anchor test --skip-local-validator --skip-deploy
 
 (`anchor test` normally loads programs automagically, but it never ever works
 for me.)
+You also need a keypair at `~/.config/solana/id.json` to run it.
+It will be used as an example master authority, instead of the Multisig.
 
 ## Key flow sequences
 
@@ -57,7 +59,8 @@ sequenceDiagram
     Program->>Mint: create_account()
     Program->>Mint: create_mint_metadata()
     Program-->>Admin: initialize_mint success
-    Admin->>Program: initialize(mint, category_addresses[pre_seed..liquidity], vault)
+    Admin->>Program: initialize_investor_categories(mint, category_addresses[pre_seed..vgp], vault)
+    Admin->>Program: initialize_func_categories(mint, category_addresses[marketing..liquidity], vault)
     Program->>MasterPda: create_master_vault()
 
     loop For each allocation category
