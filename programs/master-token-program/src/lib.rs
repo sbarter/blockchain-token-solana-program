@@ -80,8 +80,16 @@ pub mod sbarter_token_programs {
         instructions::init::mint::initialize_mint(ctx)
     }
 
-    pub fn initialize<'info>(ctx: Context<'_, '_, '_, 'info, Initialize<'info>>) -> Result<()> {
-        instructions::init::categories::initialize(ctx)
+    pub fn initialize_investor_categories<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitializeInvestorCategories<'info>>,
+    ) -> Result<()> {
+        instructions::init::investor_categories::initialize_investor(ctx)
+    }
+
+    pub fn initialize_functional_categories<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitializeFunctionalCategories<'info>>,
+    ) -> Result<()> {
+        instructions::init::functional_categories::initialize_functional(ctx)
     }
 
     pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {

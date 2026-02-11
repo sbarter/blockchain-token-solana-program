@@ -6,6 +6,8 @@ pub enum ErrorCode {
     MasterMustSign,
     #[msg("One of associated token accounts provided is wrong")]
     AtaMismatch,
+    #[msg("One of the provided functional category authority wallets is wrong")]
+    FunctionalCategoryAuthority,
 
     // TGE
     #[msg("TGE already happened or wrong mint authority")]

@@ -140,41 +140,51 @@ class TestContext {
     );
   }
 
-  async initialize(): Promise<string> {
-    const accounts: Record<string, PublicKey> = {
-      master: this.master.publicKey,
-      masterPda: this.masterPda,
-      masterAta: this.masterAta,
-      preSeedCat: this.categoryPdas["preseed"],
-      preSeedAta: this.categoryAtas["preseed"],
-      seedCat: this.categoryPdas["seed"],
-      seedAta: this.categoryAtas["seed"],
-      institutionalCat: this.categoryPdas["institutional"],
-      institutionalAta: this.categoryAtas["institutional"],
-      vgpCat: this.categoryPdas["vgp"],
-      vgpAta: this.categoryAtas["vgp"],
-      marketingCat: this.categoryPdas["marketing"],
-      marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
-      marketingAta: this.categoryAtas["marketing"],
-      foundersCat: this.categoryPdas["founders"],
-      foundersAta: this.categoryAtas["founders"],
-      reserveCat: this.categoryPdas["reserve"],
-      reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
-      reserveAta: this.categoryAtas["reserve"],
-      liquidityCat: this.categoryPdas["liquidity"],
-      liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
-      liquidityAta: this.categoryAtas["liquidity"],
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID,
-    };
-
-    const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
-
+  async initializeInvestorCategories(): Promise<string> {
     return this.executeInstruction(
-      "initialize",
-      () => this.program.methods.initialize().accounts(accounts).preInstructions([computeIx]).signers([this.master]).transaction()
+      "initialize_investor_categories",
+      () => this.program.methods.initializeInvestorCategories().accountsStrict({
+        master: this.master.publicKey,
+        masterPda: this.masterPda,
+        preSeedCat: this.categoryPdas["preseed"],
+        preSeedAta: this.categoryAtas["preseed"],
+        seedCat: this.categoryPdas["seed"],
+        seedAta: this.categoryAtas["seed"],
+        institutionalCat: this.categoryPdas["institutional"],
+        institutionalAta: this.categoryAtas["institutional"],
+        vgpCat: this.categoryPdas["vgp"],
+        vgpAta: this.categoryAtas["vgp"],
+        foundersCat: this.categoryPdas["founders"],
+        foundersAta: this.categoryAtas["founders"],
+        mint: this.mint,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      }).signers([this.master]).transaction()
+    );
+  }
+
+  async initializeFunctionalCategories(): Promise<string> {
+    return this.executeInstruction(
+      "initialize_functional_categories",
+      () => this.program.methods.initializeFunctionalCategories().accountsStrict({
+        master: this.master.publicKey,
+        masterPda: this.masterPda,
+        masterAta: this.masterAta,
+        marketingCat: this.categoryPdas["marketing"],
+        marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
+        marketingAta: this.categoryAtas["marketing"],
+        reserveCat: this.categoryPdas["reserve"],
+        reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
+        reserveAta: this.categoryAtas["reserve"],
+        liquidityCat: this.categoryPdas["liquidity"],
+        liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
+        liquidityAta: this.categoryAtas["liquidity"],
+        mint: this.mint,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      }).signers([this.master]).transaction()
     );
   }
 
@@ -195,19 +205,6 @@ class TestContext {
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    const accounts = {
-      master: this.master.publicKey,
-      masterPda: this.masterPda,
-      category: this.categoryPdas[categorySeed],
-      categoryAta: this.categoryAtas[categorySeed],
-      investorPda: investorPda,
-      investorWallet: investorWallet,
-      investorAta: investorAta,
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID
-    };
 
     const computeIx = ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 });
 
@@ -215,7 +212,19 @@ class TestContext {
       `categoryAddInvestor_${categorySeed}_${investorIndex}`,
       () => this.program.methods
         .categoryAddInvestor(categorySeed, investorIndex, amount)
-        .accounts(accounts)
+        .accountsStrict({
+          master: this.master.publicKey,
+          masterPda: this.masterPda,
+          category: this.categoryPdas[categorySeed],
+          categoryAta: this.categoryAtas[categorySeed],
+          investorPda: investorPda,
+          investorWallet: investorWallet,
+          investorAta: investorAta,
+          mint: this.mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_ID
+        })
         .preInstructions([computeIx])
         .signers([this.master])
         .transaction()
@@ -223,68 +232,63 @@ class TestContext {
   }
 
   async tge(silentError: boolean = false): Promise<string> {
-    const accounts: Record<string, PublicKey> = {
-      master: this.master.publicKey,
-      masterPda: this.masterPda,
-      masterAta: this.masterAta,
-      preSeedCat: this.categoryPdas["preseed"],
-      seedCat: this.categoryPdas["seed"],
-      institutionalCat: this.categoryPdas["institutional"],
-      vgpCat: this.categoryPdas["vgp"],
-      foundersCat: this.categoryPdas["founders"],
-      marketingCat: this.categoryPdas["marketing"],
-      marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
-      marketingAta: this.categoryAtas["marketing"],
-      liquidityCat: this.categoryPdas["liquidity"],
-      liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
-      liquidityAta: this.categoryAtas["liquidity"],
-      reserveCat: this.categoryPdas["reserve"],
-      reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
-      reserveAta: this.categoryAtas["reserve"],
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID,
-    };
-
     return this.executeInstruction(
       "tge",
-      () => this.program.methods.tge().preInstructions([]).accounts(accounts).signers([this.master]).transaction(),
+      () => this.program.methods.tge().preInstructions([]).accountsStrict({
+        master: this.master.publicKey,
+        masterPda: this.masterPda,
+        masterAta: this.masterAta,
+        preSeedCat: this.categoryPdas["preseed"],
+        seedCat: this.categoryPdas["seed"],
+        institutionalCat: this.categoryPdas["institutional"],
+        vgpCat: this.categoryPdas["vgp"],
+        foundersCat: this.categoryPdas["founders"],
+        marketingCat: this.categoryPdas["marketing"],
+        marketingAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["marketing"],
+        marketingAta: this.categoryAtas["marketing"],
+        liquidityCat: this.categoryPdas["liquidity"],
+        liquidityAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["liquidity"],
+        liquidityAta: this.categoryAtas["liquidity"],
+        reserveCat: this.categoryPdas["reserve"],
+        reserveAuthority: FUNCTIONAL_CATEGORY_AUTHORITIES["reserve"],
+        reserveAta: this.categoryAtas["reserve"],
+        mint: this.mint,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      }).signers([this.master]).transaction(),
       [],
       silentError
     );
   }
 
   async categoryTransferVestings(): Promise<string> {
-    const accounts: Record<string, PublicKey> = {
-      master: this.master.publicKey,
-      masterPda: this.masterPda,
-      masterAta: this.masterAta,
-      preSeedCat: this.categoryPdas["preseed"],
-      preSeedAta: this.categoryAtas["preseed"],
-      seedCat: this.categoryPdas["seed"],
-      seedAta: this.categoryAtas["seed"],
-      institutionalCat: this.categoryPdas["institutional"],
-      institutionalAta: this.categoryAtas["institutional"],
-      vgpCat: this.categoryPdas["vgp"],
-      vgpAta: this.categoryAtas["vgp"],
-      marketingCat: this.categoryPdas["marketing"],
-      marketingAta: this.categoryAtas["marketing"],
-      foundersCat: this.categoryPdas["founders"],
-      foundersAta: this.categoryAtas["founders"],
-      reserveCat: this.categoryPdas["reserve"],
-      reserveAta: this.categoryAtas["reserve"],
-      liquidityCat: this.categoryPdas["liquidity"],
-      liquidityAta: this.categoryAtas["liquidity"],
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID,
-    };
-
     return this.executeInstruction(
       "categoryTransferVestings",
-      () => this.program.methods.categoryTransferVestings().preInstructions([]).accounts(accounts).transaction()
+      () => this.program.methods.categoryTransferVestings().preInstructions([]).accountsStrict({
+        masterPda: this.masterPda,
+        masterAta: this.masterAta,
+        preSeedCat: this.categoryPdas["preseed"],
+        preSeedAta: this.categoryAtas["preseed"],
+        seedCat: this.categoryPdas["seed"],
+        seedAta: this.categoryAtas["seed"],
+        institutionalCat: this.categoryPdas["institutional"],
+        institutionalAta: this.categoryAtas["institutional"],
+        vgpCat: this.categoryPdas["vgp"],
+        vgpAta: this.categoryAtas["vgp"],
+        marketingCat: this.categoryPdas["marketing"],
+        marketingAta: this.categoryAtas["marketing"],
+        foundersCat: this.categoryPdas["founders"],
+        foundersAta: this.categoryAtas["founders"],
+        reserveCat: this.categoryPdas["reserve"],
+        reserveAta: this.categoryAtas["reserve"],
+        liquidityCat: this.categoryPdas["liquidity"],
+        liquidityAta: this.categoryAtas["liquidity"],
+        mint: this.mint,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      }).transaction()
     );
   }
 
@@ -300,22 +304,21 @@ class TestContext {
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    const accounts = {
-      category: this.categoryPdas[categorySeed],
-      categoryAta: this.categoryAtas[categorySeed],
-      investorPda: investorPda,
-      investorAta: investorAta,
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID
-    };
 
     return this.executeInstruction(
       `investorClaimTokens_${categorySeed}_${investorIndex}`,
       () => this.program.methods
         .investorClaimTokens(categorySeed, investorIndex)
-        .accounts(accounts)
+        .accountsStrict({
+          category: this.categoryPdas[categorySeed],
+          categoryAta: this.categoryAtas[categorySeed],
+          investorPda: investorPda,
+          investorAta: investorAta,
+          mint: this.mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_ID
+        })
         .transaction()
     );
   }
@@ -332,23 +335,23 @@ class TestContext {
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    const accounts = {
-      category: this.categoryPdas[categorySeed],
-      investorPda,
-      oldInvestorWallet: oldWallet,
-      newInvestorWallet: newWallet,
-      newInvestorAta,
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID
-    };
 
     return this.executeInstruction(
       `investorChangeWallet_${categorySeed}_${investorIndex}`,
       () => this.program.methods
         .investorChangeWallet(categorySeed, investorIndex)
-        .accounts(accounts)
+        .accountsStrict({
+          master: this.master.publicKey,
+          category: this.categoryPdas[categorySeed],
+          investorPda,
+          oldInvestorWallet: oldWallet,
+          newInvestorWallet: newWallet,
+          newInvestorAta,
+          mint: this.mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_ID
+        })
         .signers([this.master])
         .transaction(),
       [],
@@ -364,22 +367,22 @@ class TestContext {
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
-    const accounts = {
-      category: this.categoryPdas[categorySeed],
-      oldManagerWallet: oldWallet,
-      newManagerWallet: newWallet,
-      newManagerAta,
-      mint: this.mint,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: SYSTEM_PROGRAM_ID
-    };
 
     return this.executeInstruction(
       `categoryChangeManagerWallet_${categorySeed}`,
       () => this.program.methods
         .categoryChangeManagerWallet(categorySeed)
-        .accounts(accounts)
+        .accountsStrict({
+          master: this.master.publicKey,
+          category: this.categoryPdas[categorySeed],
+          oldManagerWallet: oldWallet,
+          newManagerWallet: newWallet,
+          newManagerAta,
+          mint: this.mint,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SYSTEM_PROGRAM_ID
+        })
         .signers([this.master])
         .transaction(),
       [],
@@ -520,8 +523,9 @@ describe("sbarterTokenPrograms", function() {
     console.log("mint created:", ctx.mint.toBase58());
   });
 
-  it("invoke initialize", async () => {
-    await ctx.initialize();
+  it("invoke initialize functional/investor categories", async () => {
+    await ctx.initializeInvestorCategories();
+    await ctx.initializeFunctionalCategories();
 
     try {
       const marketingCat = await ctx.program.account.functionalCategoryData.fetch(ctx.categoryPdas["marketing"]);
