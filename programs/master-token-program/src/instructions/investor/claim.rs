@@ -57,7 +57,7 @@ pub fn investor_claim_tokens<'info>(
             continue;
         }
         if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0 {
-            total_tokens += investor.monthly_allocation;
+            total_tokens += investor.monthly_allocation_in_base_units;
             investor.vesting_months_remaining -= 1;
             continue;
         }

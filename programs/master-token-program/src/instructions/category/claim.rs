@@ -111,12 +111,13 @@ fn update_vesting_for_functional_category<'info>(
         .saturating_sub(category.months_claimed as u64)
         .min(48) as u8;
 
+    msg!("Months since TGE:");
+    msg!(&months_elapsed.to_string());
+    msg!("Claiming for months:");
+    msg!(&total_months.to_string());
+
     if total_months == 0 {
         msg!("No claim available.");
-        msg!("Months since TGE:");
-        msg!(&months_elapsed.to_string());
-        msg!("Claiming for months:");
-        msg!(&total_months.to_string());
         return Ok(());
     }
 
@@ -130,7 +131,7 @@ fn update_vesting_for_functional_category<'info>(
             continue;
         }
         if category.cliff_months_remaining == 0 && category.vesting_months_remaining > 0 {
-            total_tokens += category.monthly_allocation;
+            total_tokens += category.monthly_allocation_in_base_units;
             category.vesting_months_remaining -= 1;
         }
     }

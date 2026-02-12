@@ -5,14 +5,20 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY};
+use crate::{SBT_DECIMALS, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY}};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
     _category_seed: String,
     new_investor_index: u16,
-    monthly_allocation: u64,
+    monthly_allocation_in_whole_sbts: u64,
 ) -> Result<()> {
+    let Some(monthly_allocation_in_base_units) = monthly_allocation_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32)) else {
+        msg!("You are allocating WAY too many tokens. Do you know what you're doing?");
+        msg!("The instruction expects the amount to be in whole SBTs, not base units!");
+        return err!(crate::error::ErrorCode::TooManyTokensAllocated);
+    };
+    
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
 
@@ -25,7 +31,7 @@ pub fn add_investor_to_category<'info>(
         return err!(crate::error::ErrorCode::ClosedCategoryExceed);
     }
 
-    let Some(total_allocation) = monthly_allocation.checked_mul(category.vesting_months_remaining as u64) else {
+    let Some(total_allocation) = monthly_allocation_in_base_units.checked_mul(category.vesting_months_remaining as u64) else {
         return err!(crate::error::ErrorCode::TokensUnavailable);
     };
 
@@ -47,18 +53,18 @@ pub fn add_investor_to_category<'info>(
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining = category.vesting_months_remaining - 1;
     }
-    investor.monthly_allocation = monthly_allocation;
+    investor.monthly_allocation_in_base_units = monthly_allocation_in_base_units;
     investor.months_claimed = 0;
 
     category.investor_count += 1;
-    category.unallocated_total_tokens -= monthly_allocation * category.vesting_months_remaining as u64;
-    category.allocated_unclaimed_tokens += monthly_allocation * category.vesting_months_remaining as u64;
+    category.unallocated_total_tokens -= monthly_allocation_in_base_units * category.vesting_months_remaining as u64;
+    category.allocated_unclaimed_tokens += monthly_allocation_in_base_units * category.vesting_months_remaining as u64;
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, new_investor_index: u16, monthly_allocation: u64)]
+#[instruction(category_seed: String, new_investor_index: u16, monthly_allocation_in_whole_sbts: u64)]
 pub struct AddInvestorToCategory<'info> {
     #[account(
         mut,

@@ -10,7 +10,7 @@ pub mod states;
 pub const TESTING: bool = std::option_env!("TESTING").is_some();
 
 /// Master multisig wallet that authorizes the operations (unless TESTING).
-pub const MASTER_WALLET: Pubkey = pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH");
+pub const MASTER_WALLET: Pubkey = pubkey!("4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd");
 
 pub const SBT_METADATA_URL: &str =
     "https://ipfs.io/ipfs/Qmdgzq9Rj8nUHr5erKTfqq3J5rm5XrWPTi1ceJCZmezp7S";
@@ -100,13 +100,13 @@ pub mod sbarter_token_programs {
         ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
         new_investor_index: u16,
-        monthly_allocation: u64,
+        monthly_allocation_in_whole_sbts: u64,
     ) -> Result<()> {
         instructions::investor::add::add_investor_to_category(
             ctx,
             category_seed,
             new_investor_index,
-            monthly_allocation,
+            monthly_allocation_in_whole_sbts,
         )
     }
 

@@ -217,7 +217,7 @@ class TestContext {
   async categoryAddInvestor(
     categorySeed: string,
     investorIndex: number,
-    amount: anchor.BN,
+    amountInWholeSbts: anchor.BN,
     investorWallet: PublicKey,
     silentError: boolean = false
   ): Promise<string> {
@@ -245,7 +245,7 @@ class TestContext {
       `categoryAddInvestor_${categorySeed}_${investorIndex}`,
       () =>
         this.program.methods
-          .categoryAddInvestor(categorySeed, investorIndex, amount)
+          .categoryAddInvestor(categorySeed, investorIndex, amountInWholeSbts)
           .accountsStrict({
             master: this.master.publicKey,
             masterPda: this.masterPda,
@@ -676,7 +676,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "preseed",
         i,
-        new anchor.BN(1000000 * 1000000),
+        new anchor.BN(1000000),
         investorWallet.publicKey
       );
     }
@@ -708,7 +708,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "seed",
         i,
-        new anchor.BN(2000000 * 1000000),
+        new anchor.BN(2000000),
         investorWallet.publicKey
       );
     }
@@ -723,7 +723,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "seed",
         3,
-        new anchor.BN(2000000 * 1000000),
+        new anchor.BN(2000000),
         investorWallet.publicKey,
         true
       );
@@ -851,7 +851,7 @@ describe("sbarterTokenPrograms", function () {
     await ctx.categoryAddInvestor(
       "vgp",
       1,
-      new anchor.BN(1000000 * 1000000),
+      new anchor.BN(1000000),
       investorWallet.publicKey
     );
 
@@ -902,7 +902,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "founders",
         1,
-        new anchor.BN(1000000000000 * 1000000),
+        new anchor.BN(1000000000000),
         investorWallet.publicKey
       );
     } catch (e: any) {

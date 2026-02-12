@@ -25,7 +25,7 @@ pub struct InvestorCategoryData {
 #[account]
 pub struct FunctionalCategoryData {
     pub wallet: Pubkey,
-    pub monthly_allocation: u64,
+    pub monthly_allocation_in_base_units: u64,
 
     pub cliff_started_at: u64,
     pub months_claimed: u8,
@@ -130,8 +130,8 @@ pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
 pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"marketing",
     data: FunctionalCategoryData {
-        wallet: pubkey!("GSd6RQZ4o9AMpHeRYZEwcjZ9oAP1ZLAUeKbwbNdS2oJH"),
-        monthly_allocation: MARKETING_MONTHLY_SUPPLY,
+        wallet: pubkey!("H9bPG17JxALFibvXUjNVqWUbLN5mDb9rLpCCn6WPeG3f"),
+        monthly_allocation_in_base_units: MARKETING_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 6,
@@ -143,8 +143,8 @@ pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
 pub const RESERVE_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"reserve",
     data: FunctionalCategoryData {
-        wallet: pubkey!("BdRUCurxjZvzBurS8QzzEKQ8iPCpzMYTz2YTgqnw9ZGY"),
-        monthly_allocation: RESERVE_MONTHLY_SUPPLY,
+        wallet: pubkey!("BJds5FQUDkt11Mowk6pTq7zHDonY7t9Fch2NigvdhJ5e"),
+        monthly_allocation_in_base_units: RESERVE_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 0,
@@ -156,8 +156,8 @@ pub const RESERVE_CATEGORY: Category<FunctionalCategoryData> = Category {
 pub const LIQUIDITY_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"liquidity",
     data: FunctionalCategoryData {
-        wallet: pubkey!("2eg4xRrj742edVzGAfd3wnmXAMzhAcR1XdJoBARx3hcE"),
-        monthly_allocation: LIQUIDITY_MONTHLY_SUPPLY,
+        wallet: pubkey!("2b21nqX3ZksapBgoAi6WNRHcRhZKZRCyTAVWMaWpKLZf"),
+        monthly_allocation_in_base_units: LIQUIDITY_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 0,

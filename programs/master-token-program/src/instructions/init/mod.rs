@@ -29,7 +29,7 @@ fn initialize_functional_category<'info>(
     data: FunctionalCategoryData,
 ) -> Result<()> {
     category.wallet = data.wallet;
-    category.monthly_allocation = data.monthly_allocation;
+    category.monthly_allocation_in_base_units = data.monthly_allocation_in_base_units;
     category.cliff_months_remaining = data.cliff_months_remaining;
     category.vesting_months_remaining = data.vesting_months_remaining;
     Ok(())
