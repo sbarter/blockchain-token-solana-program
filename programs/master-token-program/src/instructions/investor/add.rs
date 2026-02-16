@@ -11,9 +11,9 @@ pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
     _category_seed: String,
     new_investor_index: u16,
-    monthly_allocation_in_whole_sbts: u64,
+    total_allocation_in_whole_sbts: u64,
 ) -> Result<()> {
-    let Some(monthly_allocation_in_base_units) = monthly_allocation_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32)) else {
+    let Some(total_allocation_in_base_units) = total_allocation_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32)) else {
         msg!("You are allocating WAY too many tokens. Do you know what you're doing?");
         msg!("The instruction expects the amount to be in whole SBTs, not base units!");
         return err!(crate::error::ErrorCode::TooManyTokensAllocated);
@@ -31,15 +31,11 @@ pub fn add_investor_to_category<'info>(
         return err!(crate::error::ErrorCode::ClosedCategoryExceed);
     }
 
-    let Some(total_allocation) = monthly_allocation_in_base_units.checked_mul(category.vesting_months_remaining as u64) else {
-        return err!(crate::error::ErrorCode::TokensUnavailable);
-    };
-
     require!(category.is_open || category.cliff_started_at == 0, crate::error::ErrorCode::CategoryClosed);
     require_eq!(category.investor_count + 1, new_investor_index, crate::error::ErrorCode::InvestorIndex);
     require_gte!(
         category.unallocated_total_tokens,
-        total_allocation,
+        total_allocation_in_base_units,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
     
@@ -47,24 +43,26 @@ pub fn add_investor_to_category<'info>(
     if category.cliff_months_remaining > 0 {
         investor.cliff_months_remaining = category.cliff_months_remaining;
         investor.vesting_months_remaining = category.vesting_months_remaining;
-    } else {
+    } else if category.vesting_months_remaining > 0{
         // has to wait an extra month if joined during vesting
-        // caller has to account for difference in total allocation in this case
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining = category.vesting_months_remaining - 1;
+    } else {
+        return err!(crate::error::ErrorCode::VestingScheduleFinished);
     }
-    investor.monthly_allocation_in_base_units = monthly_allocation_in_base_units;
+    // we can afford minor integer division error
+    investor.monthly_allocation_in_base_units = total_allocation_in_base_units / investor.vesting_months_remaining as u64;
     investor.months_claimed = 0;
 
     category.investor_count += 1;
-    category.unallocated_total_tokens -= monthly_allocation_in_base_units * category.vesting_months_remaining as u64;
-    category.allocated_unclaimed_tokens += monthly_allocation_in_base_units * category.vesting_months_remaining as u64;
+    category.unallocated_total_tokens -= total_allocation_in_base_units;
+    category.allocated_unclaimed_tokens += total_allocation_in_base_units;
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, new_investor_index: u16, monthly_allocation_in_whole_sbts: u64)]
+#[instruction(category_seed: String, new_investor_index: u16, total_allocation_in_whole_sbts: u64)]
 pub struct AddInvestorToCategory<'info> {
     #[account(
         mut,

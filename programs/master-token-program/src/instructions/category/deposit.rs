@@ -10,13 +10,27 @@ use crate::{states::InvestorCategoryData, SBT_DECIMALS};
 pub fn deposit_category_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
     _category_seed: String,
-    amount: u64,
+    amount_in_whole_sbts: u64,
 ) -> Result<()> {
+    let Some(amount_in_base_units) =
+        amount_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32))
+    else {
+        msg!("You are depositing WAY too many tokens. Do you know what you're doing?");
+        msg!("The instruction expects the amount to be in whole SBTs, not base units!");
+        return err!(crate::error::ErrorCode::TooManyTokensAllocated);
+    };
+
     let category = &mut ctx.accounts.category;
 
     // NOTE: I'm not really sure if this should be constrained in any way.
     // Even the master signature is not necessary. Anybody could allocate tokens to the category,
     // knowing that the master wallet will manage them from that point on.
+
+    require_gte!(
+        ctx.accounts.sender_ata.amount,
+        amount_in_base_units,
+        crate::error::ErrorCode::BalanceInsufficient
+    );
 
     let cpi_accounts = TransferChecked {
         from: ctx.accounts.sender_ata.to_account_info(),
@@ -25,14 +39,14 @@ pub fn deposit_category_tokens<'info>(
         mint: ctx.accounts.mint.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
-    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS)?;
-    category.unallocated_total_tokens += amount;
+    token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
+    category.unallocated_total_tokens += amount_in_base_units;
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, amount: u64)]
+#[instruction(category_seed: String, amount_in_whole_sbts: u64)]
 pub struct DepositCategoryTokens<'info> {
     #[account(mut, signer)]
     pub sender: Signer<'info>,

@@ -100,13 +100,13 @@ pub mod sbarter_token_programs {
         ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
         new_investor_index: u16,
-        monthly_allocation_in_whole_sbts: u64,
+        total_allocation_in_whole_sbts: u64,
     ) -> Result<()> {
         instructions::investor::add::add_investor_to_category(
             ctx,
             category_seed,
             new_investor_index,
-            monthly_allocation_in_whole_sbts,
+            total_allocation_in_whole_sbts,
         )
     }
 
@@ -129,17 +129,25 @@ pub mod sbarter_token_programs {
     pub fn category_withdraw<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
         category_seed: String,
-        amount: u64,
+        amount_in_whole_sbts: u64,
     ) -> Result<()> {
-        instructions::category::withdraw::withdraw_category_tokens(ctx, category_seed, amount)
+        instructions::category::withdraw::withdraw_category_tokens(
+            ctx,
+            category_seed,
+            amount_in_whole_sbts,
+        )
     }
 
     pub fn category_deposit<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
         category_seed: String,
-        amount: u64,
+        amount_in_whole_sbts: u64,
     ) -> Result<()> {
-        instructions::category::deposit::deposit_category_tokens(ctx, category_seed, amount)
+        instructions::category::deposit::deposit_category_tokens(
+            ctx,
+            category_seed,
+            amount_in_whole_sbts,
+        )
     }
 
     pub fn investor_claim_tokens<'info>(

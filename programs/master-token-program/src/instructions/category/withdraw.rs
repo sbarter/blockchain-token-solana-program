@@ -10,12 +10,20 @@ use crate::{states::InvestorCategoryData, SBT_DECIMALS};
 pub fn withdraw_category_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
     category_seed: String,
-    amount: u64,
+    amount_in_whole_sbts: u64,
 ) -> Result<()> {
+    let Some(amount_in_base_units) =
+        amount_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32))
+    else {
+        msg!("You are withdrawing WAY too many tokens. Do you know what you're doing?");
+        msg!("The instruction expects the amount to be in whole SBTs, not base units!");
+        return err!(crate::error::ErrorCode::TooManyTokensAllocated);
+    };
+
     let category = &ctx.accounts.category;
     require_gte!(
         category.unallocated_total_tokens,
-        amount,
+        amount_in_base_units,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
     require_gte!(
@@ -23,7 +31,7 @@ pub fn withdraw_category_tokens<'info>(
             .category_ata
             .amount
             .saturating_sub(category.allocated_unclaimed_tokens),
-        amount,
+        amount_in_base_units,
         crate::error::ErrorCode::TokensUnavailable
     );
     require_neq!(
@@ -50,14 +58,14 @@ pub fn withdraw_category_tokens<'info>(
         cpi_accounts,
         signer_seeds,
     );
-    token_2022::transfer_checked(cpi_ctx, amount, SBT_DECIMALS)?;
-    ctx.accounts.category.unallocated_total_tokens -= amount;
+    token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
+    ctx.accounts.category.unallocated_total_tokens -= amount_in_base_units;
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(category_seed: String, amount: u64)]
+#[instruction(category_seed: String, amount_in_whole_sbts: u64)]
 pub struct WithdrawCategoryTokens<'info> {
     #[account(
         mut,

@@ -20,16 +20,20 @@ pub enum ErrorCode {
     // Investors, wallets and allocation
     #[msg("Wrong investor index provided")]
     InvestorIndex,
-    #[msg("Investor index exceeds the agreed amount of investors in a closed category")]
+    #[msg("Investor index exceeds the agreed amount of investors/members in a closed category")]
     ClosedCategoryExceed,
+    #[msg("Token vesting plan has been already completed. No new investors/members can be added.")]
+    VestingScheduleFinished,
+    #[msg("Invalid category seed")]
+    CategorySeed,
+    #[msg("Category is closed. No investors/members can be added")]
+    CategoryClosed,
     #[msg("In order to change wallet pubkey, provide the old (current) wallet pubkey")]
     OldPubkeyMismatch,
     #[msg("Unable to allocate or move this amount of tokens because of overallocation")]
     TooManyTokensAllocated,
     #[msg("Unable to move this amount of tokens because they are currently unavailable in the category")]
     TokensUnavailable,
-    #[msg("Invalid category seed")]
-    CategorySeed,
-    #[msg("Category is closed. No investors can be added")]
-    CategoryClosed,
+    #[msg("Your balance is insufficient to deposit this amount of tokens")]
+    BalanceInsufficient,
 }

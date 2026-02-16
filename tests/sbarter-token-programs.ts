@@ -639,12 +639,12 @@ describe("sbarterTokenPrograms", function () {
     }
 
     try {
-      const preseedCat = await ctx.program.account.investorCategoryData.fetch(
-        ctx.categoryPdas["preseed"]
+      const vgpCat = await ctx.program.account.investorCategoryData.fetch(
+        ctx.categoryPdas["vgp"]
       );
-      console.log("Pre-seed PDA fetch succeded:", preseedCat);
+      console.log("VGPs PDA fetch succeded:", vgpCat);
     } catch (e: any) {
-      console.log("Pre-seed PDA fetch failed:", e);
+      console.log("VGPs PDA fetch failed:", e);
     }
   });
 
@@ -676,7 +676,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "preseed",
         i,
-        new anchor.BN(1000000),
+        new anchor.BN(12000000),
         investorWallet.publicKey
       );
     }
@@ -708,7 +708,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "seed",
         i,
-        new anchor.BN(2000000),
+        new anchor.BN(24000000),
         investorWallet.publicKey
       );
     }
@@ -723,7 +723,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "seed",
         3,
-        new anchor.BN(2000000),
+        new anchor.BN(24000000),
         investorWallet.publicKey,
         true
       );
@@ -851,7 +851,7 @@ describe("sbarterTokenPrograms", function () {
     await ctx.categoryAddInvestor(
       "vgp",
       1,
-      new anchor.BN(1000000),
+      new anchor.BN(12000000),
       investorWallet.publicKey
     );
 
@@ -887,7 +887,7 @@ describe("sbarterTokenPrograms", function () {
       await ctx.categoryAddInvestor(
         "vgp",
         1,
-        new anchor.BN(1000000),
+        new anchor.BN(12000000),
         investorWallet.publicKey
       );
     } catch (e: any) {

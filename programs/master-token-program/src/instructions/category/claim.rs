@@ -109,7 +109,7 @@ fn update_vesting_for_functional_category<'info>(
     let months_elapsed = since_tge / VESTING_MONTH;
     let total_months = months_elapsed
         .saturating_sub(category.months_claimed as u64)
-        .min(48) as u8;
+        .min(48u8.saturating_sub(category.months_claimed) as u64) as u8;
 
     msg!("Months since TGE:");
     msg!(&months_elapsed.to_string());
