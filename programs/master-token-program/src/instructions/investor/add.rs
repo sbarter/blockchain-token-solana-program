@@ -5,11 +5,11 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::{SBT_DECIMALS, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY}};
+use crate::{SBT_DECIMALS, VESTING_MONTH, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY}};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
-    _category_seed: String,
+    category_seed: String,
     new_investor_index: u16,
     total_allocation_in_whole_sbts: u64,
 ) -> Result<()> {
@@ -22,7 +22,7 @@ pub fn add_investor_to_category<'info>(
     let investor = &mut ctx.accounts.investor_pda;
     let category = &mut ctx.accounts.category;
 
-    let pre_investors = match _category_seed.as_str() { 
+    let pre_investors = match category_seed.as_str() { 
         "preseed" => PRE_SEED_CATEGORY.pre_investors,
         "seed" => SEED_CATEGORY.pre_investors,
         _ => 0,
@@ -38,21 +38,39 @@ pub fn add_investor_to_category<'info>(
         total_allocation_in_base_units,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
-    
-    investor.wallet = ctx.accounts.investor_wallet.key();
-    if category.cliff_months_remaining > 0 {
-        investor.cliff_months_remaining = category.cliff_months_remaining;
-        investor.vesting_months_remaining = category.vesting_months_remaining;
-    } else if category.vesting_months_remaining > 0{
-        // has to wait an extra month if joined during vesting
-        investor.cliff_months_remaining = 1;
-        investor.vesting_months_remaining = category.vesting_months_remaining - 1;
+
+    let full_months_since_last_claim = if category.cliff_started_at != 0 {
+        let now = Clock::get()?.unix_timestamp as u64;
+        let since_tge = now.saturating_sub(category.cliff_started_at);
+        let months_elapsed = since_tge / VESTING_MONTH;
+        months_elapsed
+            .saturating_sub(category.months_claimed as u64)
+            .min(48) as u8
     } else {
+        0
+    };
+
+    if full_months_since_last_claim > 0 {
+        return err!(crate::error::ErrorCode::CategoryLevelUnclaimed);
+    }
+
+    investor.wallet = ctx.accounts.investor_wallet.key();
+    investor.cliff_months_remaining = category.cliff_months_remaining;
+    investor.vesting_months_remaining = category.vesting_months_remaining;
+    investor.last_offset_months = category.months_claimed;
+    
+    if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining == 0 {
         return err!(crate::error::ErrorCode::VestingScheduleFinished);
     }
+
+    if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0{
+        // has to wait an extra month if joined during vesting
+        investor.cliff_months_remaining = 1;
+        investor.vesting_months_remaining -= 1;
+    }    
+    
     // we can afford minor integer division error
     investor.monthly_allocation_in_base_units = total_allocation_in_base_units / investor.vesting_months_remaining as u64;
-    investor.months_claimed = 0;
 
     category.investor_count += 1;
     category.unallocated_total_tokens -= total_allocation_in_base_units;
@@ -70,7 +88,7 @@ pub struct AddInvestorToCategory<'info> {
         constraint = crate::TESTING || master.key() == crate::MASTER_WALLET
     )]
     pub master: Signer<'info>,
-    
+
     #[account(
         mut,
         seeds = [b"master"],
@@ -88,10 +106,10 @@ pub struct AddInvestorToCategory<'info> {
         bump
     )]
     pub investor_pda: Account<'info, Investor>,
-    
+
     /// CHECK: any investor wallet
     pub investor_wallet: UncheckedAccount<'info>,
-    
+
     #[account(
         init_if_needed,
         payer = master,
@@ -106,7 +124,7 @@ pub struct AddInvestorToCategory<'info> {
         bump
     )]
     pub category: Account<'info, InvestorCategoryData>,
-    
+
     #[account(
         mut,
         associated_token::mint = mint,

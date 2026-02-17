@@ -48,21 +48,11 @@ fn update_vesting_for_investor_category<'info>(
         return Ok(());
     }
 
-    let mut total_tokens = 0;
-    for _ in 0..total_months {
-        if category.vesting_months_remaining == 0 {
-            break;
-        }
-        if category.cliff_months_remaining > 0 {
-            category.cliff_months_remaining -= 1;
-            continue;
-        }
-        if category.cliff_months_remaining == 0 && category.vesting_months_remaining > 0 {
-            total_tokens += category.monthly_allocation;
-            category.vesting_months_remaining -= 1;
-            continue;
-        }
-    }
+    let cliff_months_claimed = total_months.min(category.cliff_months_remaining);
+    let vesting_months_claimed =
+        (total_months - cliff_months_claimed).min(category.vesting_months_remaining);
+    let total_tokens = category.monthly_allocation * vesting_months_claimed as u64;
+
     if total_tokens > 0 {
         let cpi_accounts = TransferChecked {
             from: master_ata.to_account_info(),
@@ -74,6 +64,8 @@ fn update_vesting_for_investor_category<'info>(
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
+    category.cliff_months_remaining -= cliff_months_claimed;
+    category.vesting_months_remaining -= vesting_months_claimed;
     category.months_claimed += total_months;
 
     Ok(())
@@ -121,20 +113,10 @@ fn update_vesting_for_functional_category<'info>(
         return Ok(());
     }
 
-    let mut total_tokens = 0;
-    for _ in 0..total_months {
-        if category.vesting_months_remaining == 0 {
-            break;
-        }
-        if category.cliff_months_remaining > 0 {
-            category.cliff_months_remaining -= 1;
-            continue;
-        }
-        if category.cliff_months_remaining == 0 && category.vesting_months_remaining > 0 {
-            total_tokens += category.monthly_allocation_in_base_units;
-            category.vesting_months_remaining -= 1;
-        }
-    }
+    let cliff_months_claimed = total_months.min(category.cliff_months_remaining);
+    let vesting_months_claimed =
+        (total_months - cliff_months_claimed).min(category.vesting_months_remaining);
+    let total_tokens = category.monthly_allocation_in_base_units * vesting_months_claimed as u64;
 
     if total_tokens > 0 {
         let cpi_accounts = TransferChecked {
@@ -147,6 +129,8 @@ fn update_vesting_for_functional_category<'info>(
             CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
+    category.cliff_months_remaining -= cliff_months_claimed;
+    category.vesting_months_remaining -= vesting_months_claimed;
     category.months_claimed += total_months;
 
     Ok(())

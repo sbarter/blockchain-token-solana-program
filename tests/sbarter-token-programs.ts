@@ -161,9 +161,13 @@ class TestContext {
   }
 
   async initializeInvestorCategories(): Promise<string> {
+    const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: 400_000,
+    });
     return this.executeInstruction("initialize_investor_categories", () =>
       this.program.methods
         .initializeInvestorCategories()
+        .preInstructions([computeIx])
         .accountsStrict({
           master: this.master.publicKey,
           masterPda: this.masterPda,
@@ -188,9 +192,13 @@ class TestContext {
   }
 
   async initializeFunctionalCategories(): Promise<string> {
+    const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: 400_000,
+    });
     return this.executeInstruction("initialize_functional_categories", () =>
       this.program.methods
         .initializeFunctionalCategories()
+        .preInstructions([computeIx])
         .accountsStrict({
           master: this.master.publicKey,
           masterPda: this.masterPda,

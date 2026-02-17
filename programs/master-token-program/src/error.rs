@@ -17,12 +17,15 @@ pub enum ErrorCode {
     #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE")]
     UnintializedInvestors,
 
+    #[msg("Category-level claim for this cycle has to happen first.")]
+    CategoryLevelUnclaimed,
+
     // Investors, wallets and allocation
     #[msg("Wrong investor index provided")]
     InvestorIndex,
     #[msg("Investor index exceeds the agreed amount of investors/members in a closed category")]
     ClosedCategoryExceed,
-    #[msg("Token vesting plan has been already completed. No new investors/members can be added.")]
+    #[msg("Token vesting plan has been already completed. No new investors/members can be added")]
     VestingScheduleFinished,
     #[msg("Invalid category seed")]
     CategorySeed,

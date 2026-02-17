@@ -189,7 +189,6 @@ const program = anchor.workspace
       systemProgram: SYSTEM_PROGRAM_ID,
     })
     .transaction();
-  console.log(await serializeTx(invTx));
 
   let funcTx = await program.methods
     .initializeFunctionalCategories()
@@ -216,5 +215,4 @@ const program = anchor.workspace
       systemProgram: SYSTEM_PROGRAM_ID,
     })
     .transaction();
-  console.log(await serializeTx(funcTx));
 })();

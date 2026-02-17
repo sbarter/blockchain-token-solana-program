@@ -31,37 +31,36 @@ pub fn investor_claim_tokens<'info>(
         crate::error::ErrorCode::TgeNotHappened
     );
 
+    // TODO: maybe as a solution to what Marco wants:
+    // only claim for category.vesting_months_remaining - investor.vesting_months_remaining,
+    // this way the claim for a month only becomes accessible after
+    // the category has claimed for that month.
     let since_tge = now.saturating_sub(category.cliff_started_at);
     let months_elapsed = since_tge / VESTING_MONTH;
     let total_months = months_elapsed
-        .saturating_sub(investor.months_claimed as u64)
-        .min(48u8.saturating_sub(investor.months_claimed) as u64) as u8;
+        .saturating_sub(investor.last_offset_months as u64)
+        .min(48u8.saturating_sub(investor.last_offset_months) as u64) as u8;
 
     msg!("Months since TGE:");
     msg!(&months_elapsed.to_string());
     msg!("Claiming for months:");
     msg!(&total_months.to_string());
 
+    if months_elapsed != category.months_claimed as u64 {
+        msg!("Category-level claim for this cycle has to happen first. Try again later");
+        return Ok(());
+    }
+
     if total_months == 0 {
         msg!("No claim available.");
         return Ok(());
     }
 
-    let mut total_tokens = 0;
-    for _ in 0..total_months {
-        if investor.vesting_months_remaining == 0 {
-            break;
-        }
-        if investor.cliff_months_remaining > 0 {
-            investor.cliff_months_remaining -= 1;
-            continue;
-        }
-        if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0 {
-            total_tokens += investor.monthly_allocation_in_base_units;
-            investor.vesting_months_remaining -= 1;
-            continue;
-        }
-    }
+    let cliff_months_claimed = total_months.min(investor.cliff_months_remaining);
+    let vesting_months_claimed =
+        (total_months - cliff_months_claimed).min(investor.vesting_months_remaining);
+    let total_tokens = investor.monthly_allocation_in_base_units * vesting_months_claimed as u64;
+
     if total_tokens > 0 {
         if ctx.accounts.category_ata.amount < total_tokens {
             msg!("No available tokens in the category at the moment. You can always try again.");
@@ -80,7 +79,9 @@ pub fn investor_claim_tokens<'info>(
         );
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
-    investor.months_claimed += total_months;
+    investor.cliff_months_remaining -= cliff_months_claimed;
+    investor.vesting_months_remaining -= vesting_months_claimed;
+    investor.last_offset_months += total_months;
     ctx.accounts.category.allocated_unclaimed_tokens -= total_tokens;
 
     Ok(())
