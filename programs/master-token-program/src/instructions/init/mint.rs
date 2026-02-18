@@ -12,6 +12,26 @@ pub fn initialize_mint<'info>(
 ) -> Result<()> {
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
+    #[cfg(feature = "mainnet-testing")]
+    CreateV1CpiBuilder::new(&ctx.accounts.mpl_metadata_program.to_account_info())
+        .name("Taste Token".to_string())
+        .symbol("TST".to_string())
+        .uri(SBT_METADATA_URL.to_string())
+        .metadata(&ctx.accounts.metadata)
+        .mint(&ctx.accounts.mint.to_account_info(), true)
+        .authority(&ctx.accounts.master_pda)
+        .payer(&ctx.accounts.authority)
+        .update_authority(&ctx.accounts.authority, true)
+        .sysvar_instructions(&ctx.accounts.sysvar_instructions)
+        .system_program(&ctx.accounts.system_program.to_account_info())
+        .spl_token_program(Some(&ctx.accounts.token_program))
+        .seller_fee_basis_points(0)
+        .token_standard(TokenStandard::Fungible)
+        .print_supply(PrintSupply::Limited(TOTAL_MINT_SUPPLY))
+        .decimals(SBT_DECIMALS)
+        .invoke_signed(signer_seeds)?;
+
+    #[cfg(not(feature = "mainnet-testing"))]
     CreateV1CpiBuilder::new(&ctx.accounts.mpl_metadata_program.to_account_info())
         .name("Sbarter".to_string())
         .symbol("SBT".to_string())

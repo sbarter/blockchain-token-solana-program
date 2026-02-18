@@ -7,25 +7,32 @@ pub mod error;
 pub mod instructions;
 pub mod states;
 
-pub const TESTING: bool = std::option_env!("TESTING").is_some();
+#[cfg(feature = "local-testing")]
+pub const LOCAL_TESTING: bool = true;
+#[cfg(not(feature = "local-testing"))]
+pub const LOCAL_TESTING: bool = false;
 
-/// Master multisig wallet that authorizes the operations (unless TESTING).
+/// Master multisig wallet that authorizes the operations (unless LOCAL_TESTING).
 pub const MASTER_WALLET: Pubkey = pubkey!("4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd");
 
+#[cfg(feature = "mainnet-testing")]
+pub const SBT_METADATA_URL: &str =
+    "https://developed-amaranth-skunk.myfilebase.com/ipfs/QmVhZPS7T3oCmL8GJio8gZ1msuQgMHqu9xnPmVfeQWtAz9";
+#[cfg(not(feature = "mainnet-testing"))]
 pub const SBT_METADATA_URL: &str =
     "https://ipfs.io/ipfs/Qmdgzq9Rj8nUHr5erKTfqq3J5rm5XrWPTi1ceJCZmezp7S";
+
 pub const SBT_DECIMALS: u8 = 6;
 pub const fn tokens(sbt: u64) -> u64 {
     sbt * 10u64.pow(SBT_DECIMALS as u32)
 }
 
-pub const VESTING_MONTH: u64 = {
-    if !TESTING {
-        30 * 24 * 60 * 60
-    } else {
-        10
-    }
-};
+#[cfg(feature = "local-testing")]
+pub const VESTING_MONTH: u64 = 10;
+#[cfg(feature = "mainnet-testing")]
+pub const VESTING_MONTH: u64 = 900;
+#[cfg(all(not(feature = "mainnet-testing"), not(feature = "local-testing")))]
+pub const VESTING_MONTH: u64 = 30 * 24 * 60 * 60;
 
 pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 
@@ -68,7 +75,7 @@ const _: () = {
     )
 };
 
-declare_id!("5LnwuNSM9TKgr69YXoLCdCdoZ7SZ1kvtYAdknPGSJ3KX");
+declare_id!("HTKFa4z3AhJsXxDVZGSqdNw77qQdCdHPxy13CTfeFRc");
 #[program]
 pub mod sbarter_token_programs {
 
@@ -168,5 +175,12 @@ pub mod sbarter_token_programs {
             category_seed,
             investor_index,
         )
+    }
+
+    #[cfg(feature = "close-accounts")]
+    pub fn close_accounts<'info>(
+        ctx: Context<'_, '_, '_, 'info, CloseAccounts<'info>>,
+    ) -> Result<()> {
+        instructions::close::close_accounts(ctx)
     }
 }

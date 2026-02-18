@@ -16,7 +16,7 @@ manually by anybody incentivized or by the first-party Automation Cronjob.
 1. Build the program:
 
 ```bash
-env TESTING=1 anchor build
+anchor build -- --features local-testing
 ```
 
 2. Run solana-test-validator:
@@ -32,7 +32,7 @@ solana-test-validator -r \
 3. Run tests:
 
 ```bash
-env TESTING=1 anchor test --skip-local-validator --skip-deploy
+anchor test --skip-local-validator --skip-deploy -- --features local-testing
 ```
 
 (`anchor test` normally loads programs automagically, but it never ever works

@@ -17,7 +17,7 @@ pub enum ErrorCode {
     #[msg("Closed categories have to have exactly the agreed amount of investors initialized before TGE")]
     UnintializedInvestors,
 
-    #[msg("Category-level claim for this cycle has to happen first.")]
+    #[msg("Category-level claim for this cycle has to happen first")]
     CategoryLevelUnclaimed,
 
     // Investors, wallets and allocation
