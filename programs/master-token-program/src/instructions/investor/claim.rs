@@ -87,7 +87,7 @@ pub fn investor_claim_tokens<'info>(
     }
     investor.cliff_months_remaining -= cliff_months_claimed;
     investor.vesting_months_remaining -= vesting_months_claimed;
-    investor.last_offset_months += total_months;
+    investor.last_offset_months = investor.last_offset_months.saturating_add(total_months);
     ctx.accounts.category.tokens_ready_for_claim = ctx
         .accounts
         .category

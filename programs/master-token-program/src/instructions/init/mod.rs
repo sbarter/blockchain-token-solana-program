@@ -1,9 +1,11 @@
 pub mod functional_categories;
 pub mod investor_categories;
+#[cfg(feature = "local-testing")]
 pub mod mint;
 
 pub use functional_categories::*;
 pub use investor_categories::*;
+#[cfg(feature = "local-testing")]
 pub use mint::*;
 
 use anchor_lang::prelude::*;

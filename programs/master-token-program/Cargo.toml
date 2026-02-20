@@ -20,7 +20,6 @@ custom-heap = []
 custom-panic = []
 local-testing = []
 mainnet-testing = []
-close-accounts = ["mainnet-testing"]
 
 
 [dependencies]

@@ -66,7 +66,7 @@ fn update_vesting_for_investor_category<'info>(
     }
     category.cliff_months_remaining -= cliff_months_claimed;
     category.vesting_months_remaining -= vesting_months_claimed;
-    category.months_claimed += total_months;
+    category.months_claimed = category.months_claimed.saturating_add(total_months);
     category.tokens_ready_for_claim +=
         category.total_allocated_tokens_monthly * vesting_months_claimed as u64;
 
@@ -133,7 +133,7 @@ fn update_vesting_for_functional_category<'info>(
     }
     category.cliff_months_remaining -= cliff_months_claimed;
     category.vesting_months_remaining -= vesting_months_claimed;
-    category.months_claimed += total_months;
+    category.months_claimed = category.months_claimed.saturating_add(total_months);
 
     Ok(())
 }

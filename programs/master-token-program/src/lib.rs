@@ -81,6 +81,7 @@ pub mod sbarter_token_programs {
 
     use super::*;
 
+    #[cfg(feature = "local-testing")]
     pub fn initialize_mint<'info>(
         ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
     ) -> Result<()> {
@@ -175,12 +176,5 @@ pub mod sbarter_token_programs {
             category_seed,
             investor_index,
         )
-    }
-
-    #[cfg(feature = "close-accounts")]
-    pub fn close_accounts<'info>(
-        ctx: Context<'_, '_, '_, 'info, CloseAccounts<'info>>,
-    ) -> Result<()> {
-        instructions::close::close_accounts(ctx)
     }
 }

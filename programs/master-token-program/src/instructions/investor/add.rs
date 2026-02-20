@@ -84,9 +84,15 @@ pub fn add_investor_to_category<'info>(
     }
 
     if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining > 0{
-        // has to wait an extra month if joined during vesting
+        // has to wait an extra month if joined during vesting, 
+        // because the process of adding an investor always happens half way through a cycle,
+        // so we skip the remainder of the first month
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining -= 1;
+        // the total allocation, spread evenly over `vesting_months_remaining + 1`,
+        // used for token reservation in the category specifically, while
+        // the actual token movement goes according to the schedule with 1 month of extra cliff,
+        // and thus 1 month of vesting less
         category.total_allocated_tokens_monthly += total_allocation_in_base_units / (investor.vesting_months_remaining + 1) as u64;
     } else {
         category.total_allocated_tokens_monthly += total_allocation_in_base_units / investor.vesting_months_remaining as u64;
