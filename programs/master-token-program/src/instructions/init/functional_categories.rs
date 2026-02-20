@@ -52,7 +52,7 @@ pub struct InitializeFunctionalCategories<'info> {
     pub master_pda: AccountInfo<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = master_pda,
@@ -74,7 +74,7 @@ pub struct InitializeFunctionalCategories<'info> {
     /// CHECK: marketing authority wallet
     pub marketing_authority: AccountInfo<'info>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = marketing_authority,
@@ -96,7 +96,7 @@ pub struct InitializeFunctionalCategories<'info> {
     /// CHECK: reserve authority wallet
     pub reserve_authority: AccountInfo<'info>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = reserve_authority,
@@ -118,7 +118,7 @@ pub struct InitializeFunctionalCategories<'info> {
     /// CHECK: liquidity authority wallet
     pub liquidity_authority: AccountInfo<'info>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = liquidity_authority,

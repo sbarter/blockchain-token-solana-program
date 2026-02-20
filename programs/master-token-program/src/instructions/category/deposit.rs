@@ -40,7 +40,7 @@ pub fn deposit_category_tokens<'info>(
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
     token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
-    category.unallocated_total_tokens += amount_in_base_units;
+    category.unallocated_tokens_left += amount_in_base_units;
 
     Ok(())
 }

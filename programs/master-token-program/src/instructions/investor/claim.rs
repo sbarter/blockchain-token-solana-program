@@ -46,6 +46,7 @@ pub fn investor_claim_tokens<'info>(
     msg!("Claiming for months:");
     msg!(&total_months.to_string());
 
+    #[cfg(not(feature = "local-testing"))]
     if months_elapsed != category.months_claimed as u64 {
         msg!("Category-level claim for this cycle has to happen first. Try again later");
         return Ok(());
@@ -82,7 +83,11 @@ pub fn investor_claim_tokens<'info>(
     investor.cliff_months_remaining -= cliff_months_claimed;
     investor.vesting_months_remaining -= vesting_months_claimed;
     investor.last_offset_months += total_months;
-    ctx.accounts.category.allocated_unclaimed_tokens -= total_tokens;
+    ctx.accounts.category.tokens_ready_for_claim = ctx
+        .accounts
+        .category
+        .tokens_ready_for_claim
+        .saturating_sub(total_tokens);
 
     Ok(())
 }

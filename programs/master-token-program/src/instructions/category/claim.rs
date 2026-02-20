@@ -67,6 +67,8 @@ fn update_vesting_for_investor_category<'info>(
     category.cliff_months_remaining -= cliff_months_claimed;
     category.vesting_months_remaining -= vesting_months_claimed;
     category.months_claimed += total_months;
+    category.tokens_ready_for_claim +=
+        category.total_allocated_tokens_monthly * vesting_months_claimed as u64;
 
     Ok(())
 }

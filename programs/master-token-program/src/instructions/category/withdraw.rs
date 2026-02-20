@@ -22,7 +22,7 @@ pub fn withdraw_category_tokens<'info>(
 
     let category = &ctx.accounts.category;
     require_gte!(
-        category.unallocated_total_tokens,
+        category.unallocated_tokens_left,
         amount_in_base_units,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
@@ -30,7 +30,7 @@ pub fn withdraw_category_tokens<'info>(
         ctx.accounts
             .category_ata
             .amount
-            .saturating_sub(category.allocated_unclaimed_tokens),
+            .saturating_sub(category.tokens_ready_for_claim),
         amount_in_base_units,
         crate::error::ErrorCode::TokensUnavailable
     );
@@ -59,7 +59,7 @@ pub fn withdraw_category_tokens<'info>(
         signer_seeds,
     );
     token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
-    ctx.accounts.category.unallocated_total_tokens -= amount_in_base_units;
+    ctx.accounts.category.unallocated_tokens_left -= amount_in_base_units;
 
     Ok(())
 }

@@ -34,7 +34,7 @@ pub fn add_investor_to_category<'info>(
     require!(category.is_open || category.cliff_started_at == 0, crate::error::ErrorCode::CategoryClosed);
     require_eq!(category.investor_count + 1, new_investor_index, crate::error::ErrorCode::InvestorIndex);
     require_gte!(
-        category.unallocated_total_tokens,
+        category.unallocated_tokens_left,
         total_allocation_in_base_units,
         crate::error::ErrorCode::TooManyTokensAllocated
     );
@@ -50,14 +50,29 @@ pub fn add_investor_to_category<'info>(
         0
     };
 
+    #[cfg(not(feature = "local-testing"))]
     if full_months_since_last_claim > 0 {
         return err!(crate::error::ErrorCode::CategoryLevelUnclaimed);
     }
 
     investor.wallet = ctx.accounts.investor_wallet.key();
+
     investor.cliff_months_remaining = category.cliff_months_remaining;
     investor.vesting_months_remaining = category.vesting_months_remaining;
     investor.last_offset_months = category.months_claimed;
+    
+    // removing the requirement to always have the category claimed up to the current cycle
+    // when testing locally, because it's inconvenient when working with minute-cycles,
+    // requires accounting for amount of months not claimed for on category level yet
+    #[cfg(feature = "local-testing")]
+    {
+        let cliff_months_skipped = full_months_since_last_claim.min(category.cliff_months_remaining);
+        let vesting_months_skipped =
+            (full_months_since_last_claim - cliff_months_skipped).min(category.vesting_months_remaining);
+        investor.cliff_months_remaining -= cliff_months_skipped;
+        investor.vesting_months_remaining -= vesting_months_skipped;
+        investor.last_offset_months += full_months_since_last_claim;
+    }
     
     if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining == 0 {
         return err!(crate::error::ErrorCode::VestingScheduleFinished);
@@ -67,14 +82,15 @@ pub fn add_investor_to_category<'info>(
         // has to wait an extra month if joined during vesting
         investor.cliff_months_remaining = 1;
         investor.vesting_months_remaining -= 1;
-    }    
+        category.total_allocated_tokens_monthly += total_allocation_in_base_units / (investor.vesting_months_remaining + 1) as u64;
+    } else {
+        category.total_allocated_tokens_monthly += total_allocation_in_base_units / investor.vesting_months_remaining as u64;
+    }
     
     // we can afford minor integer division error
     investor.monthly_allocation_in_base_units = total_allocation_in_base_units / investor.vesting_months_remaining as u64;
-
     category.investor_count += 1;
-    category.unallocated_total_tokens -= total_allocation_in_base_units;
-    category.allocated_unclaimed_tokens += total_allocation_in_base_units;
+    category.unallocated_tokens_left -= total_allocation_in_base_units;
 
     Ok(())
 }

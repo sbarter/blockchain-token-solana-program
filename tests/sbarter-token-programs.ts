@@ -487,6 +487,10 @@ class TestContext {
           pda: {
             cliffMonthsRemaining: category.cliffMonthsRemaining,
             vestingMonthsRemaining: category.vestingMonthsRemaining,
+            unallocatedTokensLeft: category.unallocatedTokensLeft.toString(),
+            totalAllocatedTokensMonthly:
+              category.totalAllocatedTokensMonthly.toString(),
+            tokensReservedForClaim: category.tokensReadyForClaim.toString(),
           },
         };
       } catch {
@@ -870,7 +874,12 @@ describe("sbarterTokenPrograms", function () {
     );
   });
 
-  it("claim funds for preseed investors manually", async () => {
+  it("claim funds for investors manually", async () => {
+    console.log("Waiting for another 10 seconds");
+    await sleep(10 * 1000);
+
+    await ctx.categoryTransferVestings();
+
     for (let i = 1; i <= 3; i++) {
       await ctx.investorClaimTokens(
         "preseed",
@@ -882,6 +891,24 @@ describe("sbarterTokenPrograms", function () {
         ctx.preseedInvestors[i - 1].ata
       );
       console.log(`Preseed investor ${i} balance: ${balance.value.uiAmount}`);
+      console.log(await ctx.getBalances());
+      assert(
+        balance.value.uiAmount > 0,
+        "no tokens were claimed for preseed investor"
+      );
+    }
+    for (let i = 1; i <= 2; i++) {
+      await ctx.investorClaimTokens(
+        "seed",
+        i,
+        ctx.seedInvestors[i - 1].wallet.publicKey
+      );
+
+      const balance = await ctx.connection.getTokenAccountBalance(
+        ctx.seedInvestors[i - 1].ata
+      );
+      console.log(`Seed investor ${i} balance: ${balance.value.uiAmount}`);
+      console.log(await ctx.getBalances());
       assert(
         balance.value.uiAmount > 0,
         "no tokens were claimed for preseed investor"

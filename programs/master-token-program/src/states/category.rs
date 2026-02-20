@@ -10,8 +10,18 @@ use crate::{
 #[account]
 pub struct InvestorCategoryData {
     pub monthly_allocation: u64,
-    pub unallocated_total_tokens: u64,
-    pub allocated_unclaimed_tokens: u64,
+
+    /// Total category allocation minus total allocations of all investors.
+    /// Used as the upper limit of allocation when adding new investors.
+    pub unallocated_tokens_left: u64,
+    /// Total monthly allocations of all investors in the category.
+    /// For each month that the category claims for, this gets added to
+    /// [`Self::allocated_unclaimed_tokens`].
+    pub total_allocated_tokens_monthly: u64,
+    /// The number of tokens that must stay in the category,
+    /// because they are currently available for investors to claim.
+    /// Used as the upper limit for manual category withdrawal.
+    pub tokens_ready_for_claim: u64,
 
     pub cliff_started_at: u64,
     pub months_claimed: u8,
@@ -49,8 +59,9 @@ pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"preseed",
     data: InvestorCategoryData {
         monthly_allocation: PRESEED_MONTHLY_SUPPLY,
-        unallocated_total_tokens: PRESEED_MONTHLY_SUPPLY * 24,
-        allocated_unclaimed_tokens: 0,
+        unallocated_tokens_left: PRESEED_MONTHLY_SUPPLY * 24,
+        total_allocated_tokens_monthly: 0,
+        tokens_ready_for_claim: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -65,8 +76,9 @@ pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"seed",
     data: InvestorCategoryData {
         monthly_allocation: SEED_MONTHLY_SUPPLY,
-        unallocated_total_tokens: SEED_MONTHLY_SUPPLY * 18,
-        allocated_unclaimed_tokens: 0,
+        unallocated_tokens_left: SEED_MONTHLY_SUPPLY * 18,
+        total_allocated_tokens_monthly: 0,
+        tokens_ready_for_claim: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 6,
@@ -81,8 +93,9 @@ pub const INSTITUTIONAL_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"institutional",
     data: InvestorCategoryData {
         monthly_allocation: INSTITUTIONAL_MONTHLY_SUPPLY,
-        unallocated_total_tokens: INSTITUTIONAL_MONTHLY_SUPPLY * 24,
-        allocated_unclaimed_tokens: 0,
+        unallocated_tokens_left: INSTITUTIONAL_MONTHLY_SUPPLY * 24,
+        total_allocated_tokens_monthly: 0,
+        tokens_ready_for_claim: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -97,8 +110,9 @@ pub const VGP_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"vgp",
     data: InvestorCategoryData {
         monthly_allocation: VGP_MONTHLY_SUPPLY,
-        unallocated_total_tokens: VGP_MONTHLY_SUPPLY * 24,
-        allocated_unclaimed_tokens: 0,
+        unallocated_tokens_left: VGP_MONTHLY_SUPPLY * 24,
+        total_allocated_tokens_monthly: 0,
+        tokens_ready_for_claim: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
@@ -113,8 +127,9 @@ pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"founders",
     data: InvestorCategoryData {
         monthly_allocation: FOUNDERS_MONTHLY_SUPPLY,
-        unallocated_total_tokens: FOUNDERS_MONTHLY_SUPPLY * 24,
-        allocated_unclaimed_tokens: 0,
+        unallocated_tokens_left: FOUNDERS_MONTHLY_SUPPLY * 24,
+        total_allocated_tokens_monthly: 0,
+        tokens_ready_for_claim: 0,
         cliff_started_at: 0,
         months_claimed: 0,
         cliff_months_remaining: 12,
