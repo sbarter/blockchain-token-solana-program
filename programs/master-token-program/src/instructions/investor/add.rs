@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::{SBT_DECIMALS, VESTING_MONTH, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY}};
+use crate::{SBT_DECIMALS, VESTING_MONTH, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY, investor_category_seed_is_valid}};
 
 pub fn add_investor_to_category<'info>(
     ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
@@ -13,6 +13,11 @@ pub fn add_investor_to_category<'info>(
     new_investor_index: u16,
     total_allocation_in_whole_sbts: u64,
 ) -> Result<()> {
+    require!(
+        investor_category_seed_is_valid(&category_seed),
+        crate::error::ErrorCode::CategorySeed
+    );
+    
     let Some(total_allocation_in_base_units) = total_allocation_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32)) else {
         msg!("You are allocating WAY too many tokens. Do you know what you're doing?");
         msg!("The instruction expects the amount to be in whole SBTs, not base units!");

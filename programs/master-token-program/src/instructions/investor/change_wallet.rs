@@ -5,13 +5,18 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::states::{Investor, InvestorCategoryData};
+use crate::states::{investor_category_seed_is_valid, Investor, InvestorCategoryData};
 
 pub fn admin_change_investor_wallet<'info>(
     ctx: Context<'_, '_, '_, 'info, ChangeInvestorWallet<'info>>,
-    _category_seed: String,
+    category_seed: String,
     _investor_index: u16,
 ) -> Result<()> {
+    require!(
+        investor_category_seed_is_valid(&category_seed),
+        crate::error::ErrorCode::CategorySeed
+    );
+
     let investor = &mut ctx.accounts.investor_pda;
     investor.wallet = ctx.accounts.new_investor_wallet.key();
     Ok(())

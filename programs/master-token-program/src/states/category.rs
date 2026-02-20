@@ -51,6 +51,14 @@ pub struct Category<T> {
     pub pre_investors: u16,
 }
 
+pub fn investor_category_seed_is_valid(category_seed: &str) -> bool {
+    ["preseed", "seed", "institutional", "vgp", "founders"].contains(&category_seed)
+}
+
+pub fn functional_category_seed_is_valid(category_seed: &str) -> bool {
+    ["marketing", "reserve", "liquidity"].contains(&category_seed)
+}
+
 // TODO: Use actual number of pre-investors for PRE_SEED and SEED,
 // we expect to know it before TGE.
 // However, we do not validate for concrete investor wallet pubkeys.

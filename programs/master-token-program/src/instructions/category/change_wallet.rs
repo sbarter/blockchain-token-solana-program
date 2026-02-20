@@ -5,12 +5,17 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::states::FunctionalCategoryData;
+use crate::states::{functional_category_seed_is_valid, FunctionalCategoryData};
 
 pub fn admin_change_functional_category_wallet<'info>(
     ctx: Context<'_, '_, '_, 'info, ChangeCategoryWallet<'info>>,
-    _category_seed: String,
+    category_seed: String,
 ) -> Result<()> {
+    require!(
+        functional_category_seed_is_valid(&category_seed),
+        crate::error::ErrorCode::CategorySeed
+    );
+
     let category = &mut ctx.accounts.category;
     category.wallet = ctx.accounts.new_manager_wallet.key();
     Ok(())

@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    states::{Investor, InvestorCategoryData},
+    states::{investor_category_seed_is_valid, Investor, InvestorCategoryData},
     SBT_DECIMALS, VESTING_MONTH,
 };
 
@@ -15,6 +15,11 @@ pub fn investor_claim_tokens<'info>(
     category_seed: String,
     _investor_index: u16,
 ) -> Result<()> {
+    require!(
+        investor_category_seed_is_valid(&category_seed),
+        crate::error::ErrorCode::CategorySeed
+    );
+
     let category = &ctx.accounts.category;
     let investor = &mut ctx.accounts.investor_pda;
 

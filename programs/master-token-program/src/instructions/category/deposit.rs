@@ -5,13 +5,21 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount},
 };
 
-use crate::{states::InvestorCategoryData, SBT_DECIMALS};
+use crate::{
+    states::{investor_category_seed_is_valid, InvestorCategoryData},
+    SBT_DECIMALS,
+};
 
 pub fn deposit_category_tokens<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
-    _category_seed: String,
+    category_seed: String,
     amount_in_whole_sbts: u64,
 ) -> Result<()> {
+    require!(
+        investor_category_seed_is_valid(&category_seed),
+        crate::error::ErrorCode::CategorySeed
+    );
+
     let Some(amount_in_base_units) =
         amount_in_whole_sbts.checked_mul(10u64.pow(SBT_DECIMALS as u32))
     else {
