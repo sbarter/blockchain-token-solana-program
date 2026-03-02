@@ -729,7 +729,25 @@ describe("sbarterTokenPrograms", function () {
     console.log(`Total seed investors: ${ctx.seedInvestors.length}`);
   });
 
-  it("fail to add more closed category investors than configured", async () => {
+  it("fail to add more closed category investors than configured (preseed)", async () => {
+    const investorWallet = Keypair.generate();
+    try {
+      await ctx.categoryAddInvestor(
+        "preseed",
+        4,
+        new anchor.BN(24000000),
+        investorWallet.publicKey,
+        true
+      );
+    } catch (e: any) {
+      return;
+    }
+    assert.fail(
+      "adding an investor beyond configured amount didn't throw an error"
+    );
+  });
+
+  it("fail to add more closed category investors than configured (seed)", async () => {
     const investorWallet = Keypair.generate();
     try {
       await ctx.categoryAddInvestor(
