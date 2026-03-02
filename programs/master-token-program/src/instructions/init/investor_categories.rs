@@ -66,7 +66,7 @@ pub struct InitializeInvestorCategories<'info> {
     )]
     pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = pre_seed_cat,
@@ -83,7 +83,7 @@ pub struct InitializeInvestorCategories<'info> {
     )]
     pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = seed_cat,
@@ -100,7 +100,7 @@ pub struct InitializeInvestorCategories<'info> {
     )]
     pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = institutional_cat,
@@ -117,7 +117,7 @@ pub struct InitializeInvestorCategories<'info> {
     )]
     pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = vgp_cat,
@@ -134,7 +134,7 @@ pub struct InitializeInvestorCategories<'info> {
     )]
     pub founders_cat: Box<Account<'info, InvestorCategoryData>>,
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = founders_cat,

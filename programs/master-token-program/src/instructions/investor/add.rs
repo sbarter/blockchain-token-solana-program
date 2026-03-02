@@ -79,7 +79,7 @@ pub fn add_investor_to_category<'info>(
         investor.last_offset_months += full_months_since_last_claim;
     }
     
-    if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining == 0 {
+    if investor.cliff_months_remaining == 0 && investor.vesting_months_remaining <= 1 {
         return err!(crate::error::ErrorCode::VestingScheduleFinished);
     }
 

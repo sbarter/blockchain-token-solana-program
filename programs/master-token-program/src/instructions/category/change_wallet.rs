@@ -38,7 +38,7 @@ pub struct ChangeCategoryWallet<'info> {
     pub new_manager_wallet: UncheckedAccount<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = new_manager_wallet,

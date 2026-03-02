@@ -37,7 +37,7 @@ pub const VESTING_MONTH: u64 = 30 * 24 * 60 * 60;
 pub const TOTAL_MINT_SUPPLY: u64 = tokens(25_000_000_000);
 
 pub const MARKETING_LIQUID_SUPPLY: u64 = tokens(100_000_000);
-pub const RESERVE_LIQUID_SUPPLY: u64 = 0; // TBD
+pub const RESERVE_LIQUID_SUPPLY: u64 = 0;
 pub const RESERVE_PADDING: u64 = 54; // gets immediately put in reserve to even out the math
 pub const LIQUIDITY_LIQUID_SUPPLY: u64 = tokens(937_500_000);
 

@@ -47,7 +47,7 @@ pub struct ChangeInvestorWallet<'info> {
     pub new_investor_wallet: UncheckedAccount<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = master,
         associated_token::mint = mint,
         associated_token::authority = new_investor_wallet,
@@ -56,7 +56,6 @@ pub struct ChangeInvestorWallet<'info> {
     pub new_investor_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
-        mut,
         seeds = [category_seed.as_bytes(), mint.key().as_ref()],
         bump
     )]
