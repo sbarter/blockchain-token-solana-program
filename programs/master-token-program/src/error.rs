@@ -25,6 +25,10 @@ pub enum ErrorCode {
     InvestorIndex,
     #[msg("Investor index exceeds the agreed amount of investors/members in a closed category")]
     ClosedCategoryExceed,
+    #[msg(
+        "Investor token allocation must not be 0. Make sure you have set the allocation correctly."
+    )]
+    InvestorAllocation,
     #[msg("Token vesting plan has been already completed. No new investors/members can be added")]
     VestingScheduleFinished,
     #[msg("Invalid category seed")]

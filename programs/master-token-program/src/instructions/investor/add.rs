@@ -38,6 +38,11 @@ pub fn add_investor_to_category<'info>(
 
     require!(category.is_open || category.cliff_started_at == 0, crate::error::ErrorCode::CategoryClosed);
     require_eq!(category.investor_count + 1, new_investor_index, crate::error::ErrorCode::InvestorIndex);
+    require_gt!(
+        total_allocation_in_base_units,
+        0,
+        crate::error::ErrorCode::InvestorAllocation
+    );
     require_gte!(
         category.unallocated_tokens_left,
         total_allocation_in_base_units,
