@@ -166,7 +166,7 @@ pub struct Tge<'info> {
     #[account(
         mut,
         signer @ crate::error::ErrorCode::MasterMustSign,
-        constraint = crate::LOCAL_TESTING || master.key() == crate::MASTER_WALLET
+        constraint = crate::LOCAL_TESTING || master.key() == crate::SBARTER_MULTISIG
     )]
     pub master: Signer<'info>,
     #[account(

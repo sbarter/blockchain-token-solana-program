@@ -13,7 +13,7 @@ pub const LOCAL_TESTING: bool = true;
 pub const LOCAL_TESTING: bool = false;
 
 /// Master multisig wallet that authorizes the operations (unless LOCAL_TESTING).
-pub const MASTER_WALLET: Pubkey = pubkey!("4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd");
+pub const SBARTER_MULTISIG: Pubkey = pubkey!("4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd");
 
 #[cfg(feature = "mainnet-testing")]
 pub const SBT_METADATA_URL: &str =
