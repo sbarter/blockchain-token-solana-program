@@ -42,22 +42,22 @@ const { Multisig } = multisig.accounts;
 const RPC_URI = "https://mainnet.helius-rpc.com/?api-key=API_KEY";
 
 const MASTER_PUBKEY = new PublicKey(
-  "4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd"
+  "HUp2467gcy1qBXNjFeaY4VpFyTMUgStMJQTmuFbyCnTx"
 );
 const MULTISIG_PDA = new PublicKey(
-  "7KV7fHLzXa9ASj7cwBWHyewk7S4F6kDFnNj8HWmoq1uo"
+  "HuPSmekEL8LSSFnikE1kCCm8qkcBs77oX7KuF4YmeWx3"
 );
 
-const MINT = new PublicKey("EUVwaeU35qCexf3bV4Bj5ZnKeaBroAj7Pj1rcg8FVBSd");
+const MINT = new PublicKey("BFQ23MmV5iEZ6cJPRE5q6okXAvKUWvRCCYYfmUzwu2uW");
 
 const MARKETING_AUTHORITY = new PublicKey(
-  "H9bPG17JxALFibvXUjNVqWUbLN5mDb9rLpCCn6WPeG3f"
+  "2GRnFCAkd8Smm8uJ2zFhZQgjCPgi341MzU9FS2U3De2q"
 );
 const RESERVE_AUTHORITY = new PublicKey(
-  "BJds5FQUDkt11Mowk6pTq7zHDonY7t9Fch2NigvdhJ5e"
+  "3kGsEXbQxWjNoVTZ7og1CVivPkBxAjtBPJYuSUn69eWi"
 );
 const LIQUIDITY_AUTHORITY = new PublicKey(
-  "2b21nqX3ZksapBgoAi6WNRHcRhZKZRCyTAVWMaWpKLZf"
+  "6RQboL2DeTM8jUQubgCYLSHZMJSLbUTRQZTEL2jjDa1M"
 );
 
 const VAULTS = {

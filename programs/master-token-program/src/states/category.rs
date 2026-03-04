@@ -59,10 +59,6 @@ pub fn functional_category_seed_is_valid(category_seed: &str) -> bool {
     ["marketing", "reserve", "liquidity"].contains(&category_seed)
 }
 
-// TODO: Use actual number of pre-investors for PRE_SEED and SEED,
-// we expect to know it before TGE.
-// However, we do not validate for concrete investor wallet pubkeys.
-
 pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
     seed: b"preseed",
     data: InvestorCategoryData {
@@ -77,7 +73,7 @@ pub const PRE_SEED_CATEGORY: Category<InvestorCategoryData> = Category {
         investor_count: 0,
         is_open: false,
     },
-    pre_investors: 3,
+    pre_investors: 68,
 };
 
 pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {
@@ -94,7 +90,7 @@ pub const SEED_CATEGORY: Category<InvestorCategoryData> = Category {
         investor_count: 0,
         is_open: false,
     },
-    pre_investors: 2,
+    pre_investors: 96,
 };
 
 pub const INSTITUTIONAL_CATEGORY: Category<InvestorCategoryData> = Category {
@@ -148,12 +144,10 @@ pub const FOUNDERS_CATEGORY: Category<InvestorCategoryData> = Category {
     pre_investors: 0,
 };
 
-// TODO: Use actual manager wallets for functional categories.
-
 pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"marketing",
     data: FunctionalCategoryData {
-        wallet: pubkey!("H9bPG17JxALFibvXUjNVqWUbLN5mDb9rLpCCn6WPeG3f"),
+        wallet: pubkey!("2GRnFCAkd8Smm8uJ2zFhZQgjCPgi341MzU9FS2U3De2q"),
         monthly_allocation_in_base_units: MARKETING_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
@@ -166,7 +160,7 @@ pub const MARKETING_CATEGORY: Category<FunctionalCategoryData> = Category {
 pub const RESERVE_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"reserve",
     data: FunctionalCategoryData {
-        wallet: pubkey!("BJds5FQUDkt11Mowk6pTq7zHDonY7t9Fch2NigvdhJ5e"),
+        wallet: pubkey!("3kGsEXbQxWjNoVTZ7og1CVivPkBxAjtBPJYuSUn69eWi"),
         monthly_allocation_in_base_units: RESERVE_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,
@@ -179,7 +173,7 @@ pub const RESERVE_CATEGORY: Category<FunctionalCategoryData> = Category {
 pub const LIQUIDITY_CATEGORY: Category<FunctionalCategoryData> = Category {
     seed: b"liquidity",
     data: FunctionalCategoryData {
-        wallet: pubkey!("2b21nqX3ZksapBgoAi6WNRHcRhZKZRCyTAVWMaWpKLZf"),
+        wallet: pubkey!("6RQboL2DeTM8jUQubgCYLSHZMJSLbUTRQZTEL2jjDa1M"),
         monthly_allocation_in_base_units: LIQUIDITY_MONTHLY_SUPPLY,
         cliff_started_at: 0,
         months_claimed: 0,

@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import {
-  ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
@@ -17,19 +16,19 @@ import fs from "fs";
 import * as bs58 from "bs58";
 import path from "path";
 
-// TODO: change with the actual master pubkey, so it's dead simple to copy and paste
 const MASTER_PUBKEY = new PublicKey(
-  "4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd"
+  "HUp2467gcy1qBXNjFeaY4VpFyTMUgStMJQTmuFbyCnTx"
 );
 const MARKETING_AUTHORITY = new PublicKey(
-  "H9bPG17JxALFibvXUjNVqWUbLN5mDb9rLpCCn6WPeG3f"
+  "2GRnFCAkd8Smm8uJ2zFhZQgjCPgi341MzU9FS2U3De2q"
 );
 const RESERVE_AUTHORITY = new PublicKey(
-  "BJds5FQUDkt11Mowk6pTq7zHDonY7t9Fch2NigvdhJ5e"
+  "3kGsEXbQxWjNoVTZ7og1CVivPkBxAjtBPJYuSUn69eWi"
 );
 const LIQUIDITY_AUTHORITY = new PublicKey(
-  "2b21nqX3ZksapBgoAi6WNRHcRhZKZRCyTAVWMaWpKLZf"
+  "6RQboL2DeTM8jUQubgCYLSHZMJSLbUTRQZTEL2jjDa1M"
 );
+const MINT = new PublicKey("BFQ23MmV5iEZ6cJPRE5q6okXAvKUWvRCCYYfmUzwu2uW");
 
 const SYSTEM_PROGRAM_ID = SystemProgram.programId;
 
@@ -113,8 +112,8 @@ const program = anchor.workspace
   const arr = JSON.parse(raw) as number[];
   const feePayer = Keypair.fromSecretKey(Uint8Array.from(arr));
 
-  const mintKeypair = await readOrCreateMint();
-  const mint = mintKeypair.publicKey;
+  // const mintKeypair = await readOrCreateMint();
+  const mint = MINT;
 
   const [masterPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("master")],

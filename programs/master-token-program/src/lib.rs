@@ -13,7 +13,7 @@ pub const LOCAL_TESTING: bool = true;
 pub const LOCAL_TESTING: bool = false;
 
 /// Master multisig wallet that authorizes the operations (unless LOCAL_TESTING).
-pub const SBARTER_MULTISIG: Pubkey = pubkey!("4fmnq8xfWwwGw1AB8sdc7TvFWA6S2aMWH5Ug6fDx7Erd");
+pub const SBARTER_MULTISIG: Pubkey = pubkey!("HUp2467gcy1qBXNjFeaY4VpFyTMUgStMJQTmuFbyCnTx");
 
 #[cfg(feature = "mainnet-testing")]
 pub const SBT_METADATA_URL: &str =
@@ -75,7 +75,7 @@ const _: () = {
     )
 };
 
-declare_id!("BDsFLe7Fjs2XSkBQ6MTPfCRnsUG9mD3hSCtKY7Z4VAcT");
+declare_id!("D4FEEraLy45Yz3zV2VHSi1Hm7DF9DddibSVzPrbK4UYm");
 #[program]
 pub mod sbarter_token_programs {
 
