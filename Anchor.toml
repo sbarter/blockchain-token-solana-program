@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-master_token_program = "BDsFLe7Fjs2XSkBQ6MTPfCRnsUG9mD3hSCtKY7Z4VAcT"
+master_token_program = "sbtBrARdYZQcL1JBKj3FDSQyvHrtFHoeww3yKY7Sqer"
 
 [programs.localnet]
 master_token_program = "47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y"
