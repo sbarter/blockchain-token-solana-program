@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      solana-ecosystem:
+        patterns:
+          - "solana-*"
+          - "spl-*"
+          - "anchor-*"
+        update-types:
+          - "minor"
+          - "patch"
+      rust-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "anchor-lang"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "anchor-spl"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "solana-*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    versioning-strategy: "increase-if-necessary"
+    open-pull-requests-limit: 5
+    groups:
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    allow:
+      - dependency-type: "direct"
