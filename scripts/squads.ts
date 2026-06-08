@@ -48,7 +48,7 @@ const MULTISIG_PDA = new PublicKey(
   "HuPSmekEL8LSSFnikE1kCCm8qkcBs77oX7KuF4YmeWx3"
 );
 
-const MINT = new PublicKey("BFQ23MmV5iEZ6cJPRE5q6okXAvKUWvRCCYYfmUzwu2uW");
+const MINT = new PublicKey("4vCRYQQF24oSyaRfh4rX72zMnPrZSJMQP4pB5yXSMtPu");
 
 const MARKETING_AUTHORITY = new PublicKey(
   "2GRnFCAkd8Smm8uJ2zFhZQgjCPgi341MzU9FS2U3De2q"
@@ -85,7 +85,9 @@ const formatBN = (bn: anchor.BN): string =>
 
 const init = async (): Promise<void> => {
   const home = process.env.HOME || process.env.USERPROFILE || ".";
-  const idPath = path.join(home, ".config", "solana", "solflare-mw.json");
+  const idPath =
+    process.env.ANCHOR_WALLET ||
+    path.join(home, ".config", "solana", "solflare-mw.json");
   const raw = fs.readFileSync(idPath, "utf8");
   const arr = JSON.parse(raw) as number[];
   feePayer = Keypair.fromSecretKey(Uint8Array.from(arr));
@@ -644,7 +646,7 @@ const submitDepositIntoCategoryTx = async (
 
 const addAllInvestors = async () => {
   const investorsLines = (
-    await fs.promises.readFile("investor-categories-test.csv", "utf8")
+    await fs.promises.readFile("investor-categories-restored.csv", "utf8")
   )
     .trim()
     .split("\n")
@@ -673,12 +675,13 @@ const addAllInvestors = async () => {
       investor.allocation,
       investor.index
     );
-    await sleep(15000);
+    await sleep(20000);
   }
 };
 
 (async () => {
   await init();
+  await submitTGETx();
 
   // NOTE: Add stuff here.
 })().catch((err) => {
