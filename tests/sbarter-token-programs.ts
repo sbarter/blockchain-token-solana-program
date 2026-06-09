@@ -966,6 +966,21 @@ describe("sbarterTokenPrograms", function () {
     );
   });
 
+  it("fail to add an investor with zero allocation", async () => {
+    const investorWallet = Keypair.generate();
+    try {
+      await ctx.categoryAddInvestor(
+        "founders",
+        1,
+        new anchor.BN(0),
+        investorWallet.publicKey
+      );
+    } catch (e: any) {
+      return;
+    }
+    assert.fail("creating an investor with 0 allocation didn't throw an error");
+  });
+
   it("change investor wallet", async () => {
     let investorAccounts = ctx.seedInvestors[0];
     const newInvestorWallet = Keypair.generate();
