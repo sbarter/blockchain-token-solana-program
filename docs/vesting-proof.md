@@ -48,6 +48,9 @@ Jun 4, 2026 at 10:10:54 UTC was done via the Multi-sig, including the execution 
 
 ## Vesting schedule
 
+Currently vested circulating supply can be viewed at: https://token.sbarter.com/circulating
+(always matches `Total vested` in the table)
+
 Below are the expected balances of the program-controlled PDA vault accounts, according to the TGE timestamp and the token vesting schedule:
 
 Date | [Master balance](https://explorer.solana.com/address/2Jw5L7etJ8T9ZMkFwtDFuUzyU7Es5sFq7VvSm7HLvSqu) | [Pre-seed balance](https://explorer.solana.com/address/JEDgkiwjJ3zQ8cv4idTUC5LsVUKrLyxMyfdesh8sH3vD) | [Seed balance](https://explorer.solana.com/address/46x5Yqsqp8karuqE48ZJ7G1sjNFC33Z7GtP5Ycb1tZ5f) | [Institutional balance](https://explorer.solana.com/address/HJnN9CZ6FeSiGo1W4fDkuwg3KYexdi7DMz3YMVLVuPRk) | [VGP balance](https://explorer.solana.com/address/As46bmdTB4Nz4WTT83s9UHKMW4JLh8CiDAFs42ewESZb) | [Team & Founders balance](https://explorer.solana.com/address/juB2PkLEU28VuehQTdjjTh6ksEsYepursT67vvCh8SM) | [Marketing balance](https://explorer.solana.com/address/7WdaCJ3BdCHBz4ozkPjKMafV8MWqB8cS2JgAJB8hS1RX) | [Reserve balance](https://explorer.solana.com/address/EJ8eUoHCWFqw616baMy88oLf3ChmBYus7b2mZ3Sj11uU) | [Liquidity balance](https://explorer.solana.com/address/A7Z8ZUvJqCojvvXHsbrwqWnqusaPzyDVpb7hwCUB4Nu7) | Total vested
