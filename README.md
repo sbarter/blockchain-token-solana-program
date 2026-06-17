@@ -1,3 +1,5 @@
+[**Supplementary proof of legitimacy**](docs/vesting-proof.md)
+
 # Sbarter Token Program
 
 The Solana program responsible for TGE and distribution of SBT tokens to categories
