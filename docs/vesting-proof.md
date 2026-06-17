@@ -33,6 +33,8 @@ Squads Multi-sig: `HuPSmekEL8LSSFnikE1kCCm8qkcBs77oX7KuF4YmeWx3`
 
 ## Audits & Security
 
+This vesting program operates according to the Sbarter Tokenomics Whitepaper: https://sbarter.com/whitepaper
+
 The codebase and the project were verified by CertiK: https://skynet.certik.com/projects/sbarter
 
 The deployed program passes the Verified Build check: https://explorer.solana.com/address/7db6vHi6uoKvFA5zP7YkadBQmnThhYJYJ2ova2S16JpJ/verified-build
