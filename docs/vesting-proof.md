@@ -2,7 +2,7 @@
 
 ## Program and token info
 
-This program, `7db6vHi6uoKvFA5zP7YkadBQmnThhYJYJ2ova2S16JpJ`, is a custom
+This program, [`7db6vHi6uoKvFA5zP7YkadBQmnThhYJYJ2ova2S16JpJ`](https://explorer.solana.com/address/7db6vHi6uoKvFA5zP7YkadBQmnThhYJYJ2ova2S16JpJ/program-multisig), is a custom
 vesting program for the Sbarter token (SBT), controlled by the Association
 Sbarter Multi-sig (Squads), configured to have no single point of failure.
 
@@ -30,6 +30,18 @@ Master ATA: `2Jw5L7etJ8T9ZMkFwtDFuUzyU7Es5sFq7VvSm7HLvSqu`
 Squads vault/master (Upgrade authority): `HUp2467gcy1qBXNjFeaY4VpFyTMUgStMJQTmuFbyCnTx`
 
 Squads Multi-sig: `HuPSmekEL8LSSFnikE1kCCm8qkcBs77oX7KuF4YmeWx3`
+
+### Category PDA data
+
+Pre-seed: https://explorer.solana.com/address/7EchSYqdTEAWPpHYdAPzgjf9f9iHaryCyhdFiaL7gENZ/anchor-account
+
+Seed: https://explorer.solana.com/address/8a78eAPfz94EEqVQcZ9rmHjfCdjMNCsFkAe39c3TisEi/anchor-account
+
+Institutional: https://explorer.solana.com/address/HUNj7fKz7WHM65KnAuewvYwaZhG98uGJVxxnCP5XEWz/anchor-account
+
+VGP: https://explorer.solana.com/address/BW5TSEqFtkr4y7ZS6KjvgNN85eP69baAPdfmQu3kjmNU/anchor-account
+
+Team & Founders: https://explorer.solana.com/address/AbFw1AbQmrtn8sKZh5vbZEu894ZDzgSLEpKSip6giN4e/anchor-account
 
 ## Audits & Security
 
