@@ -43,6 +43,12 @@ VGP: https://explorer.solana.com/address/BW5TSEqFtkr4y7ZS6KjvgNN85eP69baAPdfmQu3
 
 Team & Founders: https://explorer.solana.com/address/AbFw1AbQmrtn8sKZh5vbZEu894ZDzgSLEpKSip6giN4e/anchor-account
 
+Marketing: https://explorer.solana.com/address/3jaQqc5yP5KgrkL4GXHJiTaWHLfBNM1FfMzorLXA33Mo/anchor-account
+
+Reserve: https://explorer.solana.com/address/ENKYHAHhq8LN4cUTQeoBQJV6sdWMQkBwUyHmLduepGEU/anchor-account
+
+Liquidity: https://explorer.solana.com/address/FzQLJNiC2H6gQwQ3BUKiuDfLXk8BXLrs8LcgupJjL4t3/anchor-account
+
 ## Audits & Security
 
 This vesting program operates according to the Sbarter Tokenomics Whitepaper: https://sbarter.com/whitepaper
