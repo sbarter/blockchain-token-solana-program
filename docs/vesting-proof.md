@@ -51,7 +51,7 @@ Liquidity: https://explorer.solana.com/address/FzQLJNiC2H6gQwQ3BUKiuDfLXk8BXLrs8
 
 ## Audits & Security
 
-This vesting program operates according to the Sbarter Tokenomics Whitepaper: https://sbarter.com/whitepaper
+This vesting program operates according to the Sbarter Tokenomics Whitepaper: https://sbarter.com/white-paper
 
 The codebase and the project were verified by CertiK: https://skynet.certik.com/projects/sbarter
 
