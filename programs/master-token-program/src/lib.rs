@@ -7,6 +7,22 @@ pub mod error;
 pub mod instructions;
 pub mod states;
 
+#[cfg(not(feature = "no-entrypoint"))]
+use {default_env::default_env, solana_security_txt::security_txt};
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "Sbarter",
+    project_url: "https://sbarter.com",
+    contacts: "email:security@sbarter.com,twitter:https://x.com/SbarterSBT,discord:https://discord.gg/qT4Da8gthC",
+    policy: "https://github.com/sbarter/blockchain-token-solana-program/blob/main/docs/security-policy.pdf",
+
+    preferred_languages: "en",
+    source_code: "https://github.com/sbarter/blockchain-token-solana-program",
+    source_revision: default_env!("GITHUB_SHA", ""),
+    auditors: "CertiK (https://skynet.certik.com/projects/sbarter)"
+}
+
 #[cfg(feature = "local-testing")]
 pub const LOCAL_TESTING: bool = true;
 #[cfg(not(feature = "local-testing"))]
@@ -82,9 +98,7 @@ pub mod sbarter_token_programs {
     use super::*;
 
     #[cfg(feature = "local-testing")]
-    pub fn initialize_mint<'info>(
-        ctx: Context<'info, InitializeMint<'info>>,
-    ) -> Result<()> {
+    pub fn initialize_mint<'info>(ctx: Context<'info, InitializeMint<'info>>) -> Result<()> {
         instructions::init::mint::initialize_mint(ctx)
     }
 

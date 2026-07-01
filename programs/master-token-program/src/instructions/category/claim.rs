@@ -60,8 +60,7 @@ fn update_vesting_for_investor_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx =
-            CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
+        let cpi_ctx = CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.cliff_months_remaining -= cliff_months_claimed;
@@ -127,8 +126,7 @@ fn update_vesting_for_functional_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx =
-            CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
+        let cpi_ctx = CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.cliff_months_remaining -= cliff_months_claimed;

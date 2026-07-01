@@ -9,9 +9,7 @@ use crate::{SBT_DECIMALS, SBT_METADATA_URL, TOTAL_MINT_SUPPLY};
 
 const SYSVAR_INSTRUCTIONS_ID: Pubkey = pubkey!("Sysvar1nstructions1111111111111111111111111");
 
-pub fn initialize_mint<'info>(
-    ctx: Context<'info, InitializeMint<'info>>,
-) -> Result<()> {
+pub fn initialize_mint<'info>(ctx: Context<'info, InitializeMint<'info>>) -> Result<()> {
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
     #[cfg(feature = "local-testing")]
