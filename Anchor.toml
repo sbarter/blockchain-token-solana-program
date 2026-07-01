@@ -11,9 +11,6 @@ master_token_program = "7db6vHi6uoKvFA5zP7YkadBQmnThhYJYJ2ova2S16JpJ"
 [programs.localnet]
 master_token_program = "47D4TsSiMjG4s2ohbuvQXZEtwYeJ5VPDJaDiBUNxpm8y"
 
-[registry]
-url = "https://api.apr.dev"
-
 [provider]
 cluster = "devnet"
 wallet = "~/.config/solana/id.json"

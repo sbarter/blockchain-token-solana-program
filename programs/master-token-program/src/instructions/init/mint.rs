@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::sysvar};
+use anchor_lang::prelude::*;
 use anchor_spl::{token_2022::Token2022, token_interface::Mint};
 use mpl_token_metadata::{
     instructions::CreateV1CpiBuilder,
@@ -7,8 +7,10 @@ use mpl_token_metadata::{
 
 use crate::{SBT_DECIMALS, SBT_METADATA_URL, TOTAL_MINT_SUPPLY};
 
+const SYSVAR_INSTRUCTIONS_ID: Pubkey = pubkey!("Sysvar1nstructions1111111111111111111111111");
+
 pub fn initialize_mint<'info>(
-    ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
+    ctx: Context<'info, InitializeMint<'info>>,
 ) -> Result<()> {
     let master_seeds = &[b"master".as_ref(), &[ctx.bumps.master_pda]];
     let signer_seeds = &[&master_seeds[..]];
@@ -43,7 +45,7 @@ pub struct InitializeMint<'info> {
         bump
     )]
     /// CHECK: pda authority
-    pub master_pda: AccountInfo<'info>,
+    pub master_pda: UncheckedAccount<'info>,
 
     /// CHECK: unintilialized metadata account PDA
     #[account(
@@ -56,7 +58,7 @@ pub struct InitializeMint<'info> {
         bump,
         seeds::program = mpl_token_metadata::ID,
     )]
-    pub metadata: AccountInfo<'info>,
+    pub metadata: UncheckedAccount<'info>,
 
     #[account(
         init,
@@ -69,9 +71,9 @@ pub struct InitializeMint<'info> {
     pub token_program: Program<'info, Token2022>,
     /// CHECK: mpl_token_metadata program
     #[account(address = mpl_token_metadata::ID)]
-    pub mpl_metadata_program: AccountInfo<'info>,
+    pub mpl_metadata_program: UncheckedAccount<'info>,
     /// CHECK: sysvar instructions account
-    #[account(address = sysvar::instructions::ID)]
-    pub sysvar_instructions: AccountInfo<'info>,
+    #[account(address = SYSVAR_INSTRUCTIONS_ID)]
+    pub sysvar_instructions: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }

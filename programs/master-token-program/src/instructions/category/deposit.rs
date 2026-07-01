@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn deposit_category_tokens<'info>(
-    ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
+    ctx: Context<'info, DepositCategoryTokens<'info>>,
     category_seed: String,
     amount_in_whole_sbts: u64,
 ) -> Result<()> {
@@ -46,7 +46,7 @@ pub fn deposit_category_tokens<'info>(
         authority: ctx.accounts.sender.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.key(), cpi_accounts);
     token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
     category.unallocated_tokens_left += amount_in_base_units;
 
