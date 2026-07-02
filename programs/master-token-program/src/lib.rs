@@ -14,7 +14,7 @@ use solana_security_txt::security_txt;
 security_txt! {
     name: "Sbarter",
     project_url: "https://sbarter.com",
-    contacts: "email:security@sbarter.com,twitter:https://x.com/SbarterSBT,discord:https://discord.gg/qT4Da8gthC",
+    contacts: "email:security@sbarter.com,twitter:@SbarterSBT,discord:https://discord.gg/qT4Da8gthC",
     policy: "https://github.com/sbarter/blockchain-token-solana-program/blob/main/docs/security-policy.pdf",
 
     preferred_languages: "en",
