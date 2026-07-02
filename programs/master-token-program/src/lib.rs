@@ -8,7 +8,7 @@ pub mod instructions;
 pub mod states;
 
 #[cfg(not(feature = "no-entrypoint"))]
-use {default_env::default_env, solana_security_txt::security_txt};
+use solana_security_txt::security_txt;
 
 #[cfg(not(feature = "no-entrypoint"))]
 security_txt! {
@@ -19,7 +19,6 @@ security_txt! {
 
     preferred_languages: "en",
     source_code: "https://github.com/sbarter/blockchain-token-solana-program",
-    source_revision: default_env!("GITHUB_SHA", ""),
     auditors: "CertiK (https://skynet.certik.com/projects/sbarter)"
 }
 
