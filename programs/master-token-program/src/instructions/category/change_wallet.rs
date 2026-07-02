@@ -8,7 +8,7 @@ use anchor_spl::{
 use crate::states::{functional_category_seed_is_valid, FunctionalCategoryData};
 
 pub fn admin_change_functional_category_wallet<'info>(
-    ctx: Context<'_, '_, '_, 'info, ChangeCategoryWallet<'info>>,
+    ctx: Context<'info, ChangeCategoryWallet<'info>>,
     category_seed: String,
 ) -> Result<()> {
     require!(

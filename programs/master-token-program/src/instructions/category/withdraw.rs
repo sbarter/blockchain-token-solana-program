@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn withdraw_category_tokens<'info>(
-    ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
+    ctx: Context<'info, WithdrawCategoryTokens<'info>>,
     category_seed: String,
     amount_in_whole_sbts: u64,
 ) -> Result<()> {
@@ -61,11 +61,8 @@ pub fn withdraw_category_tokens<'info>(
         authority: ctx.accounts.category.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
-        cpi_accounts,
-        signer_seeds,
-    );
+    let cpi_ctx =
+        CpiContext::new_with_signer(ctx.accounts.token_program.key(), cpi_accounts, signer_seeds);
     token_2022::transfer_checked(cpi_ctx, amount_in_base_units, SBT_DECIMALS)?;
     ctx.accounts.category.unallocated_tokens_left -= amount_in_base_units;
 
@@ -98,7 +95,7 @@ pub struct WithdrawCategoryTokens<'info> {
     pub category_ata: InterfaceAccount<'info, TokenAccount>,
 
     /// CHECK: Wallet of `recipient_ata`
-    pub recipient: AccountInfo<'info>,
+    pub recipient: UncheckedAccount<'info>,
 
     #[account(
         init_if_needed,

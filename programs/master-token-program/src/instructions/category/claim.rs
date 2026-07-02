@@ -60,8 +60,7 @@ fn update_vesting_for_investor_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx =
-            CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
+        let cpi_ctx = CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.cliff_months_remaining -= cliff_months_claimed;
@@ -127,8 +126,7 @@ fn update_vesting_for_functional_category<'info>(
             authority: master_pda.to_account_info(),
             mint: mint.to_account_info(),
         };
-        let cpi_ctx =
-            CpiContext::new_with_signer(token_program.to_account_info(), cpi_accounts, pda_seeds);
+        let cpi_ctx = CpiContext::new_with_signer(token_program.key(), cpi_accounts, pda_seeds);
         token_2022::transfer_checked(cpi_ctx, total_tokens, SBT_DECIMALS)?;
     }
     category.cliff_months_remaining -= cliff_months_claimed;
@@ -139,7 +137,7 @@ fn update_vesting_for_functional_category<'info>(
 }
 
 pub fn transfer_category_vestings<'info>(
-    ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
+    ctx: Context<'info, TransferCategoryVestings<'info>>,
 ) -> Result<()> {
     let now = Clock::get()?.unix_timestamp as u64;
     let master_ata = &ctx.accounts.master_ata;
@@ -271,7 +269,7 @@ pub struct TransferCategoryVestings<'info> {
         bump
     )]
     /// CHECK: pda authority
-    pub master_pda: AccountInfo<'info>,
+    pub master_pda: UncheckedAccount<'info>,
 
     #[account(
         mut,
@@ -280,14 +278,14 @@ pub struct TransferCategoryVestings<'info> {
         associated_token::token_program = token_program
     )]
     /// CHECK: created by Initialize
-    pub master_ata: InterfaceAccount<'info, TokenAccount>,
+    pub master_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
         seeds = [PRE_SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub pre_seed_cat: Account<'info, InvestorCategoryData>,
+    pub pre_seed_cat: Box<Account<'info, InvestorCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub pre_seed_ata: UncheckedAccount<'info>,
@@ -297,7 +295,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [SEED_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub seed_cat: Account<'info, InvestorCategoryData>,
+    pub seed_cat: Box<Account<'info, InvestorCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub seed_ata: UncheckedAccount<'info>,
@@ -307,7 +305,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [INSTITUTIONAL_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub institutional_cat: Account<'info, InvestorCategoryData>,
+    pub institutional_cat: Box<Account<'info, InvestorCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub institutional_ata: UncheckedAccount<'info>,
@@ -317,7 +315,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [VGP_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub vgp_cat: Account<'info, InvestorCategoryData>,
+    pub vgp_cat: Box<Account<'info, InvestorCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub vgp_ata: UncheckedAccount<'info>,
@@ -327,7 +325,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [FOUNDERS_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub founders_cat: Account<'info, InvestorCategoryData>,
+    pub founders_cat: Box<Account<'info, InvestorCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub founders_ata: UncheckedAccount<'info>,
@@ -337,7 +335,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [MARKETING_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub marketing_cat: Account<'info, FunctionalCategoryData>,
+    pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub marketing_ata: UncheckedAccount<'info>,
@@ -347,7 +345,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [RESERVE_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub reserve_cat: Account<'info, FunctionalCategoryData>,
+    pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub reserve_ata: UncheckedAccount<'info>,
@@ -357,7 +355,7 @@ pub struct TransferCategoryVestings<'info> {
         seeds = [LIQUIDITY_CATEGORY.seed, mint.key().as_ref()],
         bump
     )]
-    pub liquidity_cat: Account<'info, FunctionalCategoryData>,
+    pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: created by Initialize
     #[account(mut)]
     pub liquidity_ata: UncheckedAccount<'info>,

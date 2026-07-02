@@ -18,7 +18,7 @@
  *
  */
 
-import * as anchor from "@coral-xyz/anchor";
+import * as anchor from "@anchor-lang/core";
 import * as multisig from "@sqds/multisig";
 import * as path from "path";
 import fs from "fs";
@@ -36,7 +36,7 @@ import {
   Multisig,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+import { SYSTEM_PROGRAM_ID } from "@anchor-lang/core/dist/cjs/native/system";
 const { Multisig } = multisig.accounts;
 
 const RPC_URI = "https://mainnet.helius-rpc.com/?api-key=API_KEY";
