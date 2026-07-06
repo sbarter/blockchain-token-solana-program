@@ -27,7 +27,7 @@ fn has_enough_investors<'info>(
     !category.is_open && category.investor_count == target_count
 }
 
-pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
+pub fn start_tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
     require_keys_eq!(
         ctx.accounts.master_ata.key(),
         get_associated_token_address_with_program_id(
@@ -83,7 +83,11 @@ pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
         authority: ctx.accounts.master_pda.to_account_info(),
     };
     token_2022::mint_to(
-        CpiContext::new_with_signer(ctx.accounts.token_program.key(), cpi_accounts, signer_seeds),
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            cpi_accounts,
+            signer_seeds,
+        ),
         TOTAL_MINT_SUPPLY,
     )?;
 
@@ -93,7 +97,7 @@ pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
     };
     token_2022::set_authority(
         CpiContext::new_with_signer(
-            ctx.accounts.token_program.key(),
+            ctx.accounts.token_program.to_account_info(),
             cpi_accounts_set,
             signer_seeds,
         ),
@@ -117,8 +121,11 @@ pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx =
-        CpiContext::new_with_signer(ctx.accounts.token_program.key(), cpi_accounts, signer_seeds);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(cpi_ctx, MARKETING_LIQUID_SUPPLY, SBT_DECIMALS)?;
 
     let cpi_accounts = TransferChecked {
@@ -127,8 +134,11 @@ pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx =
-        CpiContext::new_with_signer(ctx.accounts.token_program.key(), cpi_accounts, signer_seeds);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(cpi_ctx, LIQUIDITY_LIQUID_SUPPLY, SBT_DECIMALS)?;
 
     let cpi_accounts = TransferChecked {
@@ -137,8 +147,11 @@ pub fn start_tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
         authority: ctx.accounts.master_pda.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
-    let cpi_ctx =
-        CpiContext::new_with_signer(ctx.accounts.token_program.key(), cpi_accounts, signer_seeds);
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.token_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
     token_2022::transfer_checked(
         cpi_ctx,
         RESERVE_LIQUID_SUPPLY + RESERVE_PADDING,
@@ -162,7 +175,7 @@ pub struct Tge<'info> {
         bump
     )]
     /// CHECK: pda authority
-    pub master_pda: UncheckedAccount<'info>,
+    pub master_pda: AccountInfo<'info>,
     /// CHECK: created by Initialize, checked to be owned by master_pda
     #[account(
         mut,
@@ -170,7 +183,7 @@ pub struct Tge<'info> {
         associated_token::authority = master_pda,
         associated_token::token_program = token_program
     )]
-    pub master_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub master_ata: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -214,7 +227,7 @@ pub struct Tge<'info> {
     )]
     pub marketing_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: provided category authority, no checks
-    pub marketing_authority: UncheckedAccount<'info>,
+    pub marketing_authority: AccountInfo<'info>,
     #[account(
         mut,
         associated_token::mint = mint,
@@ -230,7 +243,7 @@ pub struct Tge<'info> {
     )]
     pub liquidity_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: provided category authority, no checks
-    pub liquidity_authority: UncheckedAccount<'info>,
+    pub liquidity_authority: AccountInfo<'info>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
     #[account(
         mut,
@@ -247,7 +260,7 @@ pub struct Tge<'info> {
     )]
     pub reserve_cat: Box<Account<'info, FunctionalCategoryData>>,
     /// CHECK: provided category authority, no checks
-    pub reserve_authority: UncheckedAccount<'info>,
+    pub reserve_authority: AccountInfo<'info>,
     /// CHECK: created by Initialize, checked to be owned by liquidity_cat
     #[account(
         mut,

@@ -8,7 +8,7 @@ use anchor_spl::{
 use crate::states::{investor_category_seed_is_valid, Investor, InvestorCategoryData};
 
 pub fn admin_change_investor_wallet<'info>(
-    ctx: Context<'info, ChangeInvestorWallet<'info>>,
+    ctx: Context<'_, '_, '_, 'info, ChangeInvestorWallet<'info>>,
     category_seed: String,
     _investor_index: u16,
 ) -> Result<()> {

@@ -23,11 +23,11 @@ mainnet-testing = []
 
 
 [dependencies]
-anchor-lang = { version = "=1.0.2", features = ["init-if-needed"] }
-anchor-spl = "=1.0.2"
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = "0.31.1"
 const_format = "0.2.36"
 spl-token = "9.0.0"
-mpl-token-metadata = "=5.1.2-alpha.2"
+mpl-token-metadata = "5.1.1"
 solana-security-txt = "1.1.3"
 
 [lints.rust]

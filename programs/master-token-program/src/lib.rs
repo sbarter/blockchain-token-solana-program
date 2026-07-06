@@ -97,28 +97,30 @@ pub mod sbarter_token_programs {
     use super::*;
 
     #[cfg(feature = "local-testing")]
-    pub fn initialize_mint<'info>(ctx: Context<'info, InitializeMint<'info>>) -> Result<()> {
+    pub fn initialize_mint<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitializeMint<'info>>,
+    ) -> Result<()> {
         instructions::init::mint::initialize_mint(ctx)
     }
 
     pub fn initialize_investor_categories<'info>(
-        ctx: Context<'info, InitializeInvestorCategories<'info>>,
+        ctx: Context<'_, '_, '_, 'info, InitializeInvestorCategories<'info>>,
     ) -> Result<()> {
         instructions::init::investor_categories::initialize_investor(ctx)
     }
 
     pub fn initialize_functional_categories<'info>(
-        ctx: Context<'info, InitializeFunctionalCategories<'info>>,
+        ctx: Context<'_, '_, '_, 'info, InitializeFunctionalCategories<'info>>,
     ) -> Result<()> {
         instructions::init::functional_categories::initialize_functional(ctx)
     }
 
-    pub fn tge<'info>(ctx: Context<'info, Tge<'info>>) -> Result<()> {
+    pub fn tge<'info>(ctx: Context<'_, '_, '_, 'info, Tge<'info>>) -> Result<()> {
         instructions::tge::start_tge(ctx)
     }
 
     pub fn category_add_investor<'info>(
-        ctx: Context<'info, AddInvestorToCategory<'info>>,
+        ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
         category_seed: String,
         new_investor_index: u16,
         total_allocation_in_whole_sbts: u64,
@@ -132,13 +134,13 @@ pub mod sbarter_token_programs {
     }
 
     pub fn category_transfer_vestings<'info>(
-        ctx: Context<'info, TransferCategoryVestings<'info>>,
+        ctx: Context<'_, '_, '_, 'info, TransferCategoryVestings<'info>>,
     ) -> Result<()> {
         instructions::category_claim::transfer_category_vestings(ctx)
     }
 
     pub fn category_change_manager_wallet<'info>(
-        ctx: Context<'info, ChangeCategoryWallet<'info>>,
+        ctx: Context<'_, '_, '_, 'info, ChangeCategoryWallet<'info>>,
         category_seed: String,
     ) -> Result<()> {
         instructions::category::change_wallet::admin_change_functional_category_wallet(
@@ -148,7 +150,7 @@ pub mod sbarter_token_programs {
     }
 
     pub fn category_withdraw<'info>(
-        ctx: Context<'info, WithdrawCategoryTokens<'info>>,
+        ctx: Context<'_, '_, '_, 'info, WithdrawCategoryTokens<'info>>,
         category_seed: String,
         amount_in_whole_sbts: u64,
     ) -> Result<()> {
@@ -160,7 +162,7 @@ pub mod sbarter_token_programs {
     }
 
     pub fn category_deposit<'info>(
-        ctx: Context<'info, DepositCategoryTokens<'info>>,
+        ctx: Context<'_, '_, '_, 'info, DepositCategoryTokens<'info>>,
         category_seed: String,
         amount_in_whole_sbts: u64,
     ) -> Result<()> {
@@ -172,7 +174,7 @@ pub mod sbarter_token_programs {
     }
 
     pub fn investor_claim_tokens<'info>(
-        ctx: Context<'info, InvestorClaimTokens<'info>>,
+        ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
         category_seed: String,
         investor_index: u16,
     ) -> Result<()> {
@@ -180,7 +182,7 @@ pub mod sbarter_token_programs {
     }
 
     pub fn investor_change_wallet<'info>(
-        ctx: Context<'info, ChangeInvestorWallet<'info>>,
+        ctx: Context<'_, '_, '_, 'info, ChangeInvestorWallet<'info>>,
         category_seed: String,
         investor_index: u16,
     ) -> Result<()> {

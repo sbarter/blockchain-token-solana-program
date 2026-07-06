@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { strict as assert } from "assert";
 import { describe, it, before } from "mocha";
-import * as anchor from "@anchor-lang/core";
+import * as anchor from "@coral-xyz/anchor";
 import {
   ComputeBudgetProgram,
   Connection,
