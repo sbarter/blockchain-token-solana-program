@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@anchor-lang/borsh@^1.0.2":
+"@anchor-lang/borsh@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@anchor-lang/borsh/-/borsh-1.1.2.tgz#b2e155433bf49c4cc3112a8288542a2225464060"
   integrity sha512-ilYszz4tZjBc2Kszdq/HIaiYozZuAl8ESUI/PvrHl5PvgaD5WPThVe44aDRcDDDY5Cz2Rdbqa+rlGwWW5i25cQ==
@@ -10,26 +10,24 @@
     bn.js "^5.2.3"
     buffer-layout "^1.2.0"
 
-"@anchor-lang/core@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@anchor-lang/core/-/core-1.0.2.tgz#37b46c2b2bb79a8f8650b0169204e15bf75f230e"
-  integrity sha512-XZy430qI7s3iJsT46GAcbqyJdxk2MmUo7m0fJUDYmDZSIngI5cbtNo/MAEQ3WC9YqXxesAw7KFKlOkiqNW3e9w==
+"@anchor-lang/core@1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@anchor-lang/core/-/core-1.1.2.tgz#d1c4eaa6fe02550d2a8df407f77b8fa8b44ca5d8"
+  integrity sha512-rUG9qzxoK1avDtwYBuufiwMm2t18nVt4eU9T35NT8ZzIZ2k9wbUgW9PQ9lEjteem2t/ozyfvjapsLj4algi4pA==
   dependencies:
-    "@anchor-lang/borsh" "^1.0.2"
-    "@anchor-lang/errors" "^1.0.2"
+    "@anchor-lang/borsh" "^1.1.2"
+    "@anchor-lang/errors" "^1.1.2"
     "@noble/hashes" "^1.3.1"
-    "@solana/web3.js" "^1.69.0"
-    bn.js "^5.1.2"
+    "@solana/web3.js" "^1.69.1"
+    bn.js "^5.2.3"
     bs58 "^4.0.1"
     buffer-layout "^1.2.2"
-    camelcase "^6.3.0"
-    cross-fetch "^3.1.5"
     eventemitter3 "^4.0.7"
     pako "^2.0.3"
     superstruct "^0.15.4"
     toml "^3.0.0"
 
-"@anchor-lang/errors@^1.0.2":
+"@anchor-lang/errors@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@anchor-lang/errors/-/errors-1.1.2.tgz#25d5685ed03aadf3acfe47a4795bd28b5aef699a"
   integrity sha512-+l5fLYF79t7LAYz+YbjjLzmjj6U1za6Q0cH4GBMWx4vUijlPTkm9Oj/cyDPLJG6Hsx+VFxceh7/+qbca5nnEmg==
@@ -260,7 +258,7 @@
     "@solana/spl-token-metadata" "^0.1.6"
     buffer "^6.0.3"
 
-"@solana/web3.js@^1.32.0", "@solana/web3.js@^1.56.2", "@solana/web3.js@^1.68.0", "@solana/web3.js@^1.69.0", "@solana/web3.js@^1.70.3", "@solana/web3.js@^1.98.0":
+"@solana/web3.js@^1.32.0", "@solana/web3.js@^1.56.2", "@solana/web3.js@^1.68.0", "@solana/web3.js@^1.69.1", "@solana/web3.js@^1.70.3", "@solana/web3.js@^1.98.0":
   version "1.98.4"
   resolved "https://registry.npmjs.org/@solana/web3.js/-/web3.js-1.98.4.tgz"
   integrity sha512-vv9lfnvjUsRiq//+j5pBdXig0IQdtzA0BRZ3bXEP4KaIyF1CcaydWqgyzQgfZMNIsWNWmG+AUHwPy4AHOD6gpw==
@@ -452,9 +450,9 @@ available-typed-arrays@^1.0.7:
     possible-typed-array-names "^1.0.0"
 
 axios@^1.13.2:
-  version "1.18.0"
-  resolved "https://registry.npmjs.org/axios/-/axios-1.18.0.tgz"
-  integrity sha512-E32NzpYKp++W7XRe52rHiXV2ehxmh3wbdgO7MHeFM+vqxLBYHzt0ElkiImtOBxtOmyp0yoC8C6uESVV84Y2/hw==
+  version "1.18.1"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.18.1.tgz#d63f9863bcd8938815c86f9e2abd380189d96dfe"
+  integrity sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==
   dependencies:
     follow-redirects "^1.16.0"
     form-data "^4.0.5"
@@ -512,12 +510,7 @@ bindings@^1.3.0:
   dependencies:
     file-uri-to-path "1.0.0"
 
-bn.js@^5.1.2, bn.js@^5.2.0, bn.js@^5.2.1:
-  version "5.2.2"
-  resolved "https://registry.npmjs.org/bn.js/-/bn.js-5.2.2.tgz"
-  integrity sha512-v2YAxEmKaBLahNwE1mjp4WON6huMNeuDvagFZW+ASCuA/ku0bXR9hSMw0XpiqMoA3+rmnyck/tPRSFQkoC9Cuw==
-
-bn.js@^5.2.3:
+bn.js@^5.1.2, bn.js@^5.2.0, bn.js@^5.2.1, bn.js@^5.2.3:
   version "5.2.4"
   resolved "https://registry.yarnpkg.com/bn.js/-/bn.js-5.2.4.tgz#1208fc250bb193fc5f8f0b5fa59e642e706f7103"
   integrity sha512-QL7sb18rJ1PbdsKsqPA0guxL563vIMwRHgzNrW/uzQuRGN1Cjqd/wonUBAVqHox9KwzHA6vCbM0lXx3k4iQMow==
