@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn initialize_functional<'info>(
-    ctx: Context<'info, InitializeFunctionalCategories<'info>>,
+    ctx: Context<'_, '_, '_, 'info, InitializeFunctionalCategories<'info>>,
 ) -> Result<()> {
     if let Err(e) =
         initialize_functional_category(&mut ctx.accounts.marketing_cat, MARKETING_CATEGORY.data)
@@ -49,7 +49,7 @@ pub struct InitializeFunctionalCategories<'info> {
         bump
     )]
     /// CHECK: master pda authority
-    pub master_pda: UncheckedAccount<'info>,
+    pub master_pda: AccountInfo<'info>,
 
     #[account(
         init_if_needed,
@@ -72,7 +72,7 @@ pub struct InitializeFunctionalCategories<'info> {
         address = MARKETING_CATEGORY.data.wallet @ crate::error::ErrorCode::FunctionalCategoryAuthority
     )]
     /// CHECK: marketing authority wallet
-    pub marketing_authority: UncheckedAccount<'info>,
+    pub marketing_authority: AccountInfo<'info>,
     #[account(
         init_if_needed,
         payer = master,
@@ -94,7 +94,7 @@ pub struct InitializeFunctionalCategories<'info> {
         address = RESERVE_CATEGORY.data.wallet @ crate::error::ErrorCode::FunctionalCategoryAuthority
     )]
     /// CHECK: reserve authority wallet
-    pub reserve_authority: UncheckedAccount<'info>,
+    pub reserve_authority: AccountInfo<'info>,
     #[account(
         init_if_needed,
         payer = master,
@@ -116,7 +116,7 @@ pub struct InitializeFunctionalCategories<'info> {
         address = LIQUIDITY_CATEGORY.data.wallet @ crate::error::ErrorCode::FunctionalCategoryAuthority
     )]
     /// CHECK: liquidity authority wallet
-    pub liquidity_authority: UncheckedAccount<'info>,
+    pub liquidity_authority: AccountInfo<'info>,
     #[account(
         init_if_needed,
         payer = master,

@@ -8,7 +8,7 @@ use anchor_spl::{
 use crate::{instructions::init::initialize_investor_category, states::category::*};
 
 pub fn initialize_investor<'info>(
-    ctx: Context<'info, InitializeInvestorCategories<'info>>,
+    ctx: Context<'_, '_, '_, 'info, InitializeInvestorCategories<'info>>,
 ) -> Result<()> {
     if let Err(e) =
         initialize_investor_category(&mut ctx.accounts.pre_seed_cat, PRE_SEED_CATEGORY.data)
@@ -55,7 +55,7 @@ pub struct InitializeInvestorCategories<'info> {
         bump
     )]
     /// CHECK: pda authority
-    pub master_pda: UncheckedAccount<'info>,
+    pub master_pda: AccountInfo<'info>,
 
     #[account(
         init,

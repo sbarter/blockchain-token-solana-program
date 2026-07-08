@@ -8,7 +8,7 @@ use anchor_spl::{
 use crate::{SBT_DECIMALS, VESTING_MONTH, states::{Investor, InvestorCategoryData, PRE_SEED_CATEGORY, SEED_CATEGORY, investor_category_seed_is_valid}};
 
 pub fn add_investor_to_category<'info>(
-    ctx: Context<'info, AddInvestorToCategory<'info>>,
+    ctx: Context<'_, '_, '_, 'info, AddInvestorToCategory<'info>>,
     category_seed: String,
     new_investor_index: u16,
     total_allocation_in_whole_sbts: u64,
@@ -127,7 +127,7 @@ pub struct AddInvestorToCategory<'info> {
         bump
     )]
     /// CHECK: pda authority
-    pub master_pda: UncheckedAccount<'info>,
+    pub master_pda: AccountInfo<'info>,
 
     #[account(
         init,

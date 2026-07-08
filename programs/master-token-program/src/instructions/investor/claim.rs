@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn investor_claim_tokens<'info>(
-    ctx: Context<'info, InvestorClaimTokens<'info>>,
+    ctx: Context<'_, '_, '_, 'info, InvestorClaimTokens<'info>>,
     category_seed: String,
     _investor_index: u16,
 ) -> Result<()> {
@@ -79,7 +79,7 @@ pub fn investor_claim_tokens<'info>(
             mint: ctx.accounts.mint.to_account_info(),
         };
         let cpi_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.key(),
+            ctx.accounts.token_program.to_account_info(),
             cpi_accounts,
             signer_seeds,
         );
